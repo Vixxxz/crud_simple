@@ -22,8 +22,8 @@ function meu_callback(respostaCep) {
         document.getElementById('logradouro').value=(respostaCep.logradouro);
         console.log("Setting bairro to", respostaCep.bairro);
         document.getElementById('bairro').value=(respostaCep.bairro);
-        console.log("Setting cidade to", respostaCep.cidade);
-        document.getElementById('cidade').value=(respostaCep.cidade);
+        console.log("Setting cidade to", respostaCep.localidade);
+        document.getElementById('cidade').value=(respostaCep.localidade);
         console.log("Setting estado to", respostaCep.uf);
         document.getElementById('estado').value=(respostaCep.uf);
         console.log("Setting pais to Brasil");
