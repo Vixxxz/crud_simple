@@ -12,7 +12,6 @@ import java.util.logging.Logger;
 
 public class BairroDAO implements IDAO{
     private Connection connection;
-    private boolean ctrlTransaction = true;
     private static final Logger logger = Logger.getLogger(BairroDAO.class.getName());
 
     public BairroDAO(Connection connection){
@@ -29,8 +28,6 @@ public class BairroDAO implements IDAO{
         try {
             if (connection == null) {
                 connection = Conexao.getConnectionMySQL();
-            } else {
-                ctrlTransaction = false;
             }
             connection.setAutoCommit(false);
 
@@ -51,25 +48,11 @@ public class BairroDAO implements IDAO{
                         bairro.setId(idBairro);
                     }
                 }
-                connection.commit();
                 return bairro;
             }
         }catch (Exception e) {
-            try{
-                connection.rollback();
-            }catch (SQLException rollbackEx) {
-                logger.log(Level.SEVERE, "Erro ao tentar realizar o rollback " + rollbackEx.getMessage(), rollbackEx);
-            }
-            logger.log(Level.SEVERE, "Erro ao salvar entidade: " + e.getMessage() + " " + bairro, e);
-            throw new Exception("Erro ao salvar a entidade: " + e.getMessage() + " " + bairro, e); // Lançar exceção em vez de retornar null
-        }finally {
-            if(ctrlTransaction && connection!= null){
-                try{
-                    connection.close();
-                }catch (SQLException sqlEx){
-                    logger.log(Level.SEVERE, "Erro ao tentar fechar a conexão", sqlEx);
-                }
-            }
+            logger.log(Level.SEVERE, "Erro ao salvar bairro: " + e.getMessage() + " " + bairro, e);
+            throw new Exception("Erro ao salvar o bairro: " + e.getMessage() + " " + bairro, e); // Lançar exceção em vez de retornar null
         }
     }
 

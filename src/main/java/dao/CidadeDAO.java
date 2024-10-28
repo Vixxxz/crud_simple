@@ -12,7 +12,6 @@ import java.util.logging.Logger;
 
 public class CidadeDAO implements IDAO{
     private Connection connection;
-    private boolean ctrlTransaction = true;
     private static final Logger logger = Logger.getLogger(CidadeDAO.class.getName());
 
     public CidadeDAO(Connection connection){
@@ -29,8 +28,6 @@ public class CidadeDAO implements IDAO{
         try {
             if (connection == null) {
                 connection = Conexao.getConnectionMySQL();
-            } else {
-                ctrlTransaction = false;
             }
             connection.setAutoCommit(false);
 
@@ -51,7 +48,6 @@ public class CidadeDAO implements IDAO{
                         cidade.setId(idCidade);
                     }
                 }
-                connection.commit();
                 return cidade;
             }
         }catch(Exception e){
@@ -61,15 +57,7 @@ public class CidadeDAO implements IDAO{
                 logger.log(Level.SEVERE, "Erro ao tentar realizar o rollback " + rollbackEx.getMessage(), rollbackEx);
             }
             logger.log(Level.SEVERE, "Erro ao salvar cidade: " + e.getMessage() + " " + cidade, e);
-            throw new Exception("Erro ao salvar a entidade: " + e.getMessage() + " " + cidade, e); // Lançar exceção em vez de retornar null
-        }finally {
-            if(ctrlTransaction && connection!= null){
-                try{
-                    connection.close();
-                }catch(SQLException sqlEx){
-                    logger.log(Level.SEVERE, "Erro ao tentar fechar a conexão", sqlEx);
-                }
-            }
+            throw new Exception("Erro ao salvar a cidade: " + e.getMessage() + " " + cidade, e); // Lançar exceção em vez de retornar null
         }
     }
 

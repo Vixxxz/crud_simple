@@ -11,7 +11,6 @@ import java.util.logging.Logger;
 
 public class TipoLogradouroDAO implements IDAO{
     private Connection connection;
-    private boolean ctrlTransaction = true;
     private static final Logger logger = Logger.getLogger(TipoLogradouroDAO.class.getName());
 
     public TipoLogradouroDAO(Connection connection){
@@ -29,8 +28,6 @@ public class TipoLogradouroDAO implements IDAO{
         try{
             if(connection == null){
                 connection = Conexao.getConnectionMySQL();
-            }else{
-                ctrlTransaction = false;
             }
             connection.setAutoCommit(false);
 
@@ -47,25 +44,11 @@ public class TipoLogradouroDAO implements IDAO{
                         tpLogradouro.setId(idTpLgr);
                     }
                 }
-                connection.commit();
                 return tpLogradouro;
             }
         }catch (Exception e) {
-            try {
-                connection.rollback();
-            } catch (SQLException rollbackEx) {
-                logger.log(Level.SEVERE, "Erro ao tentar realizar o rollback " + rollbackEx.getMessage(), rollbackEx);
-            }
             logger.log(Level.SEVERE, "Erro ao salvar tipo logradouro: " + e.getMessage() + " " + tpLogradouro, e);
             throw new Exception("Erro ao salvar o tipo logradouro: " + e.getMessage() + " " + tpLogradouro, e); // Lançar exceção em vez de retornar null
-        } finally {
-            if (ctrlTransaction && connection != null) {
-                try {
-                    connection.close();
-                } catch (SQLException sqlEx) {
-                    logger.log(Level.SEVERE, "Erro ao tentar fechar a conexão", sqlEx);
-                }
-            }
         }
     }
 

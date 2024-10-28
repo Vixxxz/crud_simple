@@ -12,7 +12,6 @@ import java.util.logging.Logger;
 
 public class ClienteEnderecoDAO implements IDAO{
     private Connection connection;
-    private boolean ctrlTransaction = true;
     private static final Logger logger = Logger.getLogger(ClienteEnderecoDAO.class.getName());
 
     public ClienteEnderecoDAO(Connection connection){
@@ -31,8 +30,6 @@ public class ClienteEnderecoDAO implements IDAO{
         try {
             if (connection == null) {
                 connection = Conexao.getConnectionMySQL();
-            } else {
-                ctrlTransaction = false;
             }
             connection.setAutoCommit(false);
 
@@ -57,25 +54,11 @@ public class ClienteEnderecoDAO implements IDAO{
                         clienteEndereco.setId(idClienteEndereco);
                     }
                 }
-                connection.commit();
                 return clienteEndereco;
             }
         }catch (SQLException e) {
-            try {
-                connection.rollback();
-            } catch (SQLException rollbackEx) {
-                logger.log(Level.SEVERE, "Erro ao tentar realizar o rollback " + rollbackEx.getMessage(), rollbackEx);
-            }
             logger.log(Level.SEVERE, "Erro ao salvar ClienteEndereco: " + e.getMessage() + " " + clienteEndereco, e);
-            throw new Exception("Erro ao salvar a entidade: " + e.getMessage() + " " + clienteEndereco, e);
-        } finally {
-            if (ctrlTransaction && connection != null) {
-                try {
-                    connection.close();
-                } catch (SQLException sqlEx) {
-                    logger.log(Level.SEVERE, "Erro ao tentar fechar a conexão", sqlEx);
-                }
-            }
+            throw new Exception("Erro ao salvar ClienteEndereco: " + e.getMessage() + " " + clienteEndereco, e);
         }
     }
 

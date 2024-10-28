@@ -12,7 +12,6 @@ import java.util.logging.Logger;
 
 public class UfDAO implements IDAO{
     private Connection connection;
-    private boolean ctrlTransaction = true;
     private static final Logger logger = Logger.getLogger(UfDAO.class.getName());
 
     public UfDAO(Connection connection){
@@ -29,13 +28,13 @@ public class UfDAO implements IDAO{
         try{
             if(connection == null){
                 connection = Conexao.getConnectionMySQL();
-            }else{
-                ctrlTransaction = false;
             }
             connection.setAutoCommit(false);
 
             IDAO paisDAO = new PaisDAO(connection);
-            uf.setPais(salvaPais(uf, paisDAO));
+            Pais pais = salvaPais(uf, paisDAO);
+            uf.setPais(pais);
+            logger.log(Level.INFO, "pais salvo: " + pais);
             uf.complementarDtCadastro();
 
             try(PreparedStatement pst = connection.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS)){
@@ -43,31 +42,19 @@ public class UfDAO implements IDAO{
                 pst.setInt(2, uf.getPais().getId());
                 pst.setTimestamp(3, new Timestamp(uf.getDtCadastro().getTime()));
 
+                pst.executeUpdate();
+
                 try(ResultSet rs = pst.getGeneratedKeys()){
                     if(rs.next()){
                         int idUf = rs.getInt(1);
                         uf.setId(idUf);
                     }
                 }
-                connection.commit();
                 return uf;
             }
         }catch(Exception e){
-            try{
-                connection.rollback();
-            }catch (SQLException rollbackEx){
-                logger.log(Level.SEVERE, "Erro ao tentar realizar o rollback " + rollbackEx.getMessage(), rollbackEx);
-            }
             logger.log(Level.SEVERE, "Erro ao salvar UF: " + e.getMessage() + " " + uf, e);
-            throw new Exception("Erro ao salvar a entidade: " + e.getMessage() + " " + uf, e);
-        }finally {
-            if(ctrlTransaction && connection!= null){
-                try{
-                    connection.close();
-                }catch (SQLException e){
-                    logger.log(Level.SEVERE, "Erro ao tentar fechar a conexão", e);
-                }
-            }
+            throw new Exception("Erro ao salvar a uf: " + e.getMessage() + " " + uf, e);
         }
     }
 
@@ -80,7 +67,7 @@ public class UfDAO implements IDAO{
                 throw new Exception("Falha ao salvar o pais: o pais retornado é nulo.");
             }
         } catch (Exception e) {
-            logger.log(Level.SEVERE, "Erro ao salvar uf: " + e);
+            logger.log(Level.SEVERE, "Erro ao salvar o pais: " + e);
             throw new Exception("Erro ao salvar o pais: " + e.getMessage(), e);
         }
     }

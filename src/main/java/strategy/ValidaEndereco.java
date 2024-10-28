@@ -10,6 +10,11 @@ public class ValidaEndereco implements IStrategy{
         Cliente cliente = (Cliente) entidade;
         List<ClienteEndereco> enderecosRelacionados = cliente.getEnderecosRelacionados();
 
+        if(enderecosRelacionados.isEmpty()) {
+            sb.append("Cliente não possui endereço cadastrado.\n");
+            return null;
+        }
+
         for (ClienteEndereco enderecoRelacionado : enderecosRelacionados) {
             Endereco endereco = enderecoRelacionado.getEndereco();
             Logradouro logradouro = endereco.getLogradouro();

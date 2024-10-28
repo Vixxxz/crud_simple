@@ -71,14 +71,14 @@ public class ClienteDAO implements IDAO{
             } catch (SQLException rollbackEx) {
                 logger.log(Level.SEVERE, "Erro ao tentar realizar o rollback " + rollbackEx.getMessage(), rollbackEx);
             }
-            logger.log(Level.SEVERE, "Erro ao salvar cliente " + e.getMessage() + " " + cliente, e);
+            logger.log(Level.SEVERE, "Erro ao salvar cliente: " + e.getMessage() + " " + cliente, e);
             throw new Exception("Erro ao salvar o cliente: " + e.getMessage() + " " + cliente, e);
         } finally {
             if (ctrlTransaction && connection != null) {
                 try {
                     connection.close();
                 } catch (SQLException sqlEx) {
-                    logger.log(Level.SEVERE, "Erro ao tentar fechar a conexão" + sqlEx.getMessage(), sqlEx);
+                    logger.log(Level.SEVERE, "Erro ao tentar fechar a conexão: " + sqlEx.getMessage(), sqlEx);
                 }
             }
         }
