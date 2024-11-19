@@ -33,8 +33,10 @@ public class BairroDAO implements IDAO{
 
             IDAO cidadeDAO = new CidadeDAO(connection);
             bairro.setCidade(salvaCidade(bairro, cidadeDAO));
+            logger.log(Level.INFO, "cidade salva: " + bairro.getCidade().getCidade());
             bairro.complementarDtCadastro();
 
+            logger.log(Level.INFO, "salvando bairro: " + bairro.getBairro());
             try(PreparedStatement pst = connection.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS)){
                 pst.setString(1, bairro.getBairro());
                 pst.setInt(2, bairro.getCidade().getId());

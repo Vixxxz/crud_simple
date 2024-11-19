@@ -35,8 +35,10 @@ public class ClienteEnderecoDAO implements IDAO{
 
             IDAO enderecoDAO = new EnderecoDAO(connection);
             clienteEndereco.setEndereco(salvaEndereco(clienteEndereco, enderecoDAO));
+            logger.log(Level.INFO, "endereco salvo: " + clienteEndereco.getEndereco().getCep());
             clienteEndereco.complementarDtCadastro();
 
+            logger.log(Level.INFO, "salvando cliente endereco: " + clienteEndereco.getNumero());
             try (PreparedStatement pst = connection.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS)) {
                 pst.setInt(1, clienteEndereco.getCliente().getId());
                 pst.setInt(2, clienteEndereco.getEndereco().getId());

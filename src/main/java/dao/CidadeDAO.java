@@ -33,8 +33,9 @@ public class CidadeDAO implements IDAO{
 
             IDAO ufDAO = new UfDAO(connection);
             cidade.setUf(salvaUf(cidade, ufDAO));
+            logger.log(Level.INFO, "uf salva: " + cidade.getUf().getUf());
             cidade.complementarDtCadastro();
-
+            logger.log(Level.INFO, "salvando cidade: " + cidade.getCidade());
             try (PreparedStatement pst = connection.prepareStatement(sql.toString(), PreparedStatement.RETURN_GENERATED_KEYS)) {
                 pst.setString(1, cidade.getCidade());
                 pst.setInt(2, cidade.getUf().getId());

@@ -32,6 +32,8 @@ public class PaisDAO implements IDAO{
 
             pais.complementarDtCadastro();
 
+            logger.log(Level.INFO, "salvando pais: " + pais.getPais());
+
             try (PreparedStatement pst = connection.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS)) {
                 pst.setString(1, pais.getPais());
                 pst.setTimestamp(2, new Timestamp(pais.getDtCadastro().getTime()));
@@ -43,6 +45,7 @@ public class PaisDAO implements IDAO{
                         pais.setId(idPais);
                     }
                 }
+
                 return pais;
             }
         }catch (Exception e) {

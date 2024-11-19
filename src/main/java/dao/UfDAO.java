@@ -34,9 +34,10 @@ public class UfDAO implements IDAO{
             IDAO paisDAO = new PaisDAO(connection);
             Pais pais = salvaPais(uf, paisDAO);
             uf.setPais(pais);
-            logger.log(Level.INFO, "pais salvo: " + pais);
+            logger.log(Level.INFO, "pais salvo: " + pais.getPais());
             uf.complementarDtCadastro();
 
+            logger.log(Level.INFO, "salvando uf: " + uf.getUf());
             try(PreparedStatement pst = connection.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS)){
                 pst.setString(1, uf.getUf());
                 pst.setInt(2, uf.getPais().getId());

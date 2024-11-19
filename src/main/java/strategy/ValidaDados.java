@@ -24,6 +24,10 @@ public class ValidaDados implements IStrategy{
     private void validaData(Date data, String mensagemErro, StringBuilder sb) {
         if(data == null) {
             sb.append(mensagemErro).append(" ");
+            return;
+        }
+        if(data.after(new Date())){
+            sb.append("Data de Nascimento não pode ser futura").append(" ");
         }
     }
 

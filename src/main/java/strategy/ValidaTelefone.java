@@ -15,7 +15,7 @@ public class ValidaTelefone implements IStrategy{
     }
 
     private void validaTelefone(String telefone, StringBuilder sb) {
-        final String TELEFONE_REGEX = "^(\\(\\d{2}\\)\\s)?(9\\d{4}-?\\d{4}|\\d{4}-?\\d{4}|\\d{11})$";
+        final String TELEFONE_REGEX = "^(\\(\\d{2}\\)|\\d{2})?\\s?(9\\d{4}-?\\d{4}|[2-5]\\d{3}-?\\d{4})$";
         if (telefone == null || telefone.isEmpty()) {
             sb.append("Telefone é um campo obrigatório").append("\n"); // Retorna falso se o telefone for nulo ou vazio
         }

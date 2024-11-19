@@ -37,9 +37,12 @@ public class EnderecoDAO implements IDAO{
             IDAO bairroDAO = new BairroDAO(connection);
 
             endereco.setLogradouro(salvaLogradouro(endereco, logradouroDAO));
+            logger.log(Level.INFO, "logradouro salvo: " + endereco.getLogradouro().getLogradouro());
             endereco.setBairro(salvaBairro(endereco, bairroDAO));
+            logger.log(Level.INFO, "bairro salvo: " + endereco.getBairro().getBairro());
             endereco.complementarDtCadastro();
 
+            logger.log(Level.INFO, "salvando endereco: " + endereco.getCep());
             try(PreparedStatement pst = connection.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS)){
                 pst.setString(1, endereco.getCep());
                 pst.setInt(2, endereco.getBairro().getId());

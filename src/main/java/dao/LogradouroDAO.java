@@ -34,8 +34,10 @@ public class LogradouroDAO implements IDAO{
 
             IDAO tipoLogradouroDAO = new TipoLogradouroDAO(connection);
             logradouro.setTpLogradouro(salvaTipoLogradouro(logradouro, tipoLogradouroDAO));
+            logger.log(Level.INFO, "tipo logradouro salvo: " + logradouro.getTpLogradouro().getTpLogradouro());
             logradouro.complementarDtCadastro();
 
+            logger.log(Level.INFO, "salvando logradouro " + logradouro.getLogradouro());
             try(PreparedStatement pst = connection.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS)) {
                 pst.setString(1, logradouro.getLogradouro());
                 pst.setInt(2, logradouro.getTpLogradouro().getId());

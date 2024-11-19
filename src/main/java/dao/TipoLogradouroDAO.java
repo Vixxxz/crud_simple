@@ -33,6 +33,7 @@ public class TipoLogradouroDAO implements IDAO{
 
             tpLogradouro.complementarDtCadastro();
 
+            logger.log(Level.INFO, "salvando tipo logradouro: " + tpLogradouro.getTpLogradouro());
             try(PreparedStatement pst = connection.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS)){
                 pst.setString(1, tpLogradouro.getTpLogradouro());
                 pst.setTimestamp(2, new Timestamp(tpLogradouro.getDtCadastro().getTime()));
