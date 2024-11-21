@@ -31,23 +31,28 @@ public class FachadaDAO implements IFachada {
             connection.setAutoCommit(false);
             List<EntidadeDominio> entidadesSalvas = new ArrayList<>();
             for(EntidadeDominio entidade : entidades){
-                if (entidade instanceof Cliente) {
-                    Cliente cliente = (Cliente) procuraOuSalvaCliente((Cliente) entidade, connection);
-                    logger.log(Level.INFO, "cliente salvo " + cliente.getCpf());
-                    entidades.stream()
-                            .filter(e -> e instanceof ClienteEndereco)
-                            .forEach(e -> ((ClienteEndereco) e).setCliente(cliente));
-
-                    entidadesSalvas.add(cliente);
-                }else if (entidade instanceof ClienteEndereco clienteEndereco) {
-                    clienteEndereco = (ClienteEndereco) procuraOuSalvaClienteEndereco(clienteEndereco, connection);
-                    logger.log(Level.INFO, "cliente endereco salvo: " + clienteEndereco.getNumero());
-                    entidadesSalvas.add(clienteEndereco);
-                }//else if (entidade instanceof Cartao) {}
-                //else if (entidade instanceof Transacao) {}
-                //else if (entidade instanceof Log) {}
-                else{
-                    throw new IllegalArgumentException("Tipo de entidade não suportado: " + entidade.getClass().getSimpleName());
+                switch (entidade) {
+                    case Cliente cliente -> {
+                        Cliente clienteSalvo = (Cliente) procuraOuSalvaCliente(cliente, connection);
+                        logger.log(Level.INFO, "cliente salvo " + clienteSalvo.getCpf());
+                        entidades.stream()
+                                .filter(e -> e instanceof ClienteEndereco)
+                                .forEach(e -> ((ClienteEndereco) e).setCliente(clienteSalvo));
+                        entidadesSalvas.add(clienteSalvo);
+                    }
+                    case ClienteEndereco clienteEndereco -> {
+                        clienteEndereco = (ClienteEndereco) procuraOuSalvaClienteEndereco(clienteEndereco, connection);
+                        logger.log(Level.INFO, "cliente endereco salvo: " + clienteEndereco.getNumero());
+                        entidadesSalvas.add(clienteEndereco);
+                    }
+//                    case Cartao cartao -> {
+//                    }
+//                    case Transacao transacao -> {
+//                    }
+//                    case Log log -> {
+//                    }
+                    case null, default ->
+                            throw new IllegalArgumentException("Tipo de entidade não suportado: " + entidade);
                 }
             }
             connection.commit();
@@ -75,13 +80,27 @@ public class FachadaDAO implements IFachada {
     private EntidadeDominio procuraOuSalvaClienteEndereco(ClienteEndereco clienteEndereco, Connection connection) throws Exception {
         //todo: implementar a verificação se o cliente endereço ja existe antes de salvar
         IDAO clienteEnderecoDAO = new ClienteEnderecoDAO(connection);
-        return clienteEnderecoDAO.salvar(clienteEndereco);
+        List<EntidadeDominio> clientesSalvos = clienteEnderecoDAO.consultar(clienteEndereco);
+        if(clientesSalvos.isEmpty()){
+            return clienteEnderecoDAO.salvar(clienteEndereco);
+        }else{
+            throw new Exception("Cliente Endereço já existente.");
+        }
     }
 
     private EntidadeDominio procuraOuSalvaCliente(Cliente cliente, Connection connection) throws Exception {
         //todo: implementar a verificação se o cliente ja existe antes de salvar
-        IDAO clienteDAO = new ClienteDAO(connection);
-        return clienteDAO.salvar(cliente);
+        try{
+            IDAO clienteDAO = new ClienteDAO(connection);
+            List<EntidadeDominio> clientesSalvos = clienteDAO.consultar(cliente);
+            if(clientesSalvos.isEmpty()){
+                return clienteDAO.salvar(cliente);
+            }else{
+                throw new Exception("Cliente já existente.");
+            }
+        }catch(Exception e){
+            throw new Exception(e.getMessage(), e);
+        }
     }
 
     public void alterar(EntidadeDominio entidade, StringBuilder sb) {

@@ -5,6 +5,7 @@ import dominio.EntidadeDominio;
 import util.Conexao;
 
 import java.sql.*;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -72,7 +73,86 @@ public class ClienteDAO implements IDAO{
     }
 
     @Override
-    public List<EntidadeDominio> consultar(EntidadeDominio entidade) {
-        return List.of();
+    public List<EntidadeDominio> consultar(EntidadeDominio entidade) throws Exception {
+        List<EntidadeDominio> clientes = new ArrayList<>();
+        try{
+            Cliente cliente = (Cliente) entidade;
+            List<Object> parametros = new ArrayList<>();
+
+            StringBuilder sql = new StringBuilder();
+            sql.append("select * from crud_v2.cliente ");
+            sql.append("where 1=1");
+
+
+            if(cliente.getId() != null){
+                sql.append("and c.cli_id = ? ");
+                parametros.add(cliente.getId());
+            }
+            if(isValidString(cliente.getRanking())){
+                sql.append("and c.cli_rank = ? ");
+                parametros.add(cliente.getRanking());
+            }
+            if(isValidString(cliente.getNome())){
+                sql.append("and c.cli_nome = ? ");
+                parametros.add(cliente.getNome());
+            }
+            if(isValidString(cliente.getGenero())){
+                sql.append("and c.cli_genero = ? ");
+                parametros.add(cliente.getGenero());
+            }
+            if(isValidString(cliente.getCpf())){
+                sql.append("and c.cli_cpf = ? ");
+                parametros.add(cliente.getCpf());
+            }
+            if(isValidString(cliente.getTipoTelefone())){
+                sql.append("and c.cli_tp_tel = ? ");
+                parametros.add(cliente.getTipoTelefone());
+            }
+            if(isValidString(cliente.getTelefone())){
+                sql.append("and c.cli_tel = ? ");
+                parametros.add(cliente.getTelefone());
+            }
+            if(isValidString(cliente.getEmail())){
+                sql.append("and c.cli_email = ? ");
+                parametros.add(cliente.getEmail());
+            }
+            if(isValidString(cliente.getSenha())){
+                sql.append("and c.cli_senha = ? ");
+                parametros.add(cliente.getSenha());
+            }
+            if(cliente.getDataNascimento() != null){
+                sql.append("and c.cli_dt_nasc = ? ");
+                parametros.add(cliente.getDataNascimento());
+            }
+            try (PreparedStatement pst = connection.prepareStatement(sql.toString())) {
+                for (int i = 0; i < parametros.size(); i++) {
+                    pst.setObject(i + 1, parametros.get(i));
+                }
+
+                try(ResultSet rs = pst.executeQuery()){
+                    while (rs.next()) {
+                        Cliente cli = new Cliente();
+                        cli.setId(rs.getInt("cli_id"));
+                        cli.setRanking(rs.getString("cli_rank"));
+                        cli.setNome(rs.getString("cli_nome"));
+                        cli.setGenero(rs.getString("cli_genero"));
+                        cli.setCpf(rs.getString("cli_cpf"));
+                        cli.setTipoTelefone(rs.getString("cli_tp_tel"));
+                        cli.setTelefone(rs.getString("cli_tel"));
+                        cli.setEmail(rs.getString("cli_email"));
+                        cli.setSenha(rs.getString("cli_senha"));
+                        cli.setDataNascimento(rs.getDate("cli_dt_nasc"));
+                        clientes.add(cli);
+                    }                }
+            }
+            return clientes;
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Erro ao salvar cliente: " + e.getMessage() + " " + clientes, e);
+            throw new Exception("Erro ao salvar o cliente: " + e.getMessage() + " " + clientes, e);
+        }
+    }
+
+    private boolean isValidString(String value) {
+        return value != null && !value.isBlank();
     }
 }
