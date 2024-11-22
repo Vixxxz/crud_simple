@@ -5,6 +5,7 @@ import dominio.Pais;
 import util.Conexao;
 
 import java.sql.*;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -45,7 +46,6 @@ public class PaisDAO implements IDAO{
                         pais.setId(idPais);
                     }
                 }
-
                 return pais;
             }
         }catch (Exception e) {
@@ -65,7 +65,45 @@ public class PaisDAO implements IDAO{
     }
 
     @Override
-    public List<EntidadeDominio> consultar(EntidadeDominio entidade) {
-        return List.of();
+    public List<EntidadeDominio> consultar(EntidadeDominio entidade) throws Exception {
+        Pais pais = (Pais) entidade;
+        try{
+            List<EntidadeDominio> paises = new ArrayList<>();
+            List<Object> parametros = new ArrayList<>();
+
+            StringBuilder sql = new StringBuilder();
+            sql.append("select * from crud_v2.pais p");
+            sql.append("where 1=1 ");
+
+            if(pais.getId() != null){
+                sql.append(" and p.pai_id = ? ");
+                parametros.add(pais.getId());
+            }
+            if(isStringValida(pais.getPais())){
+                sql.append(" and p.pai_pais = ? ");
+                parametros.add(pais.getPais());
+            }
+
+            try(PreparedStatement pst = connection.prepareStatement(sql.toString())){
+                for (int i = 0; i< parametros.size(); i++){
+                    pst.setObject(i+1, parametros.get(i));
+                }
+                try(ResultSet rs = pst.executeQuery()){
+                    while(rs.next()){
+                        Pais p = new Pais();
+                        p.setId(rs.getInt("pai_id"));
+                        p.setPais(rs.getString("pai_pais"));
+                        paises.add(p);
+                    }
+                }
+            }
+            return paises;
+        } catch (Exception e) {
+            throw new Exception("Erro ao consultar pais: " + e.getMessage(), e);
+        }
+    }
+
+    private boolean isStringValida(String value) {
+        return value != null && !value.isBlank();
     }
 }

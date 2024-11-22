@@ -2,10 +2,12 @@ package dao;
 
 import dominio.Cidade;
 import dominio.EntidadeDominio;
+import dominio.Pais;
 import dominio.Uf;
 import util.Conexao;
 
 import java.sql.*;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -32,8 +34,16 @@ public class CidadeDAO implements IDAO{
             connection.setAutoCommit(false);
 
             IDAO ufDAO = new UfDAO(connection);
-            cidade.setUf(salvaUf(cidade, ufDAO));
-            logger.log(Level.INFO, "uf salva: " + cidade.getUf().getUf());
+            List<EntidadeDominio> ufs = ufDAO.consultar(cidade.getUf());
+
+            if(ufs.isEmpty()){
+                cidade.setUf(salvaUf(cidade, ufDAO));
+                logger.log(Level.INFO, "uf salva: " + cidade.getUf().getUf());
+            }
+            else{
+                cidade.setUf((Uf) ufs.getFirst());
+            }
+
             cidade.complementarDtCadastro();
             logger.log(Level.INFO, "salvando cidade: " + cidade.getCidade());
             try (PreparedStatement pst = connection.prepareStatement(sql.toString(), PreparedStatement.RETURN_GENERATED_KEYS)) {
@@ -87,7 +97,86 @@ public class CidadeDAO implements IDAO{
     }
 
     @Override
-    public List<EntidadeDominio> consultar(EntidadeDominio entidade) {
-        return List.of();
+    public List<EntidadeDominio> consultar(EntidadeDominio entidade) throws Exception {
+        Cidade cidade = (Cidade) entidade;
+        try {
+            List<EntidadeDominio> cidades = new ArrayList<>();
+            List<Object> parametros = new ArrayList<>();
+
+            StringBuilder sql = construirConsultaCidade(cidade, parametros);
+
+            try (PreparedStatement pst = connection.prepareStatement(sql.toString())) {
+                for (int i = 0; i < parametros.size(); i++) {
+                    pst.setObject(i + 1, parametros.get(i));
+                }
+                try (ResultSet rs = pst.executeQuery()) {
+                    while (rs.next()) {
+                        cidades.add(mapeiaCidade(rs));
+                    }
+                }
+            }
+            return cidades;
+        } catch (Exception e) {
+            throw new Exception("Erro ao consultar cidade: " + e.getMessage(), e);
+        }
+    }
+
+    private EntidadeDominio mapeiaCidade(ResultSet rs) throws SQLException {
+        Cidade c = new Cidade();
+        c.setId(rs.getInt("cid_id"));
+        c.setCidade(rs.getString("cid_cidade"));
+
+        Uf u = new Uf();
+        u.setId(rs.getInt("uf_id"));
+        u.setUf(rs.getString("uf_uf"));
+
+        Pais p = new Pais();
+        p.setId(rs.getInt("pai_id"));
+        p.setPais(rs.getString("pai_pais"));
+
+        u.setPais(p);
+        c.setUf(u);
+
+        return c;
+    }
+
+    private StringBuilder construirConsultaCidade(Cidade cidade, List<Object> parametros) {
+        StringBuilder sql = new StringBuilder();
+        sql.append("SELECT * FROM crud_v2.cidade c ")
+                .append("INNER JOIN crud_v2.uf u ON c.cid_uf_id = u.uf_id ")
+                .append("INNER JOIN crud_v2.pais p ON u.pai_pai_id = p.pai_id ")
+                .append("WHERE 1=1 ");
+
+        adicionarCondicao(sql, "c.cid_id = ?", cidade.getId(), parametros);
+        adicionarCondicao(sql, "c.cid_cidade = ?", cidade.getCidade(), parametros, true);
+
+        if (cidade.getUf() != null) {
+            Uf uf = cidade.getUf();
+            adicionarCondicao(sql, "u.uf_id = ?", uf.getId(), parametros);
+            adicionarCondicao(sql, "u.uf_uf = ?", uf.getUf(), parametros, true);
+
+            if (uf.getPais() != null) {
+                Pais pais = uf.getPais();
+                adicionarCondicao(sql, "p.pai_id = ?", pais.getId(), parametros);
+                adicionarCondicao(sql, "p.pai_pais = ?", pais.getPais(), parametros, true);
+            }
+        }
+
+        return sql;
+    }
+
+    private void adicionarCondicao(StringBuilder sql, String condicao, Object valor, List<Object> parametros) {
+        adicionarCondicao(sql, condicao, valor, parametros, false);
+    }
+
+    private void adicionarCondicao(StringBuilder sql, String condicao, Object valor, List<Object> parametros, boolean isString) {
+        if ((isString && isStringValida((String) valor)) || (!isString && valor != null)) {
+            sql.append(" AND ").append(condicao).append(" ");
+            parametros.add(valor);
+        }
+    }
+
+    private boolean isStringValida(String value) {
+        return value != null && !value.isBlank();
     }
 }

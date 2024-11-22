@@ -5,6 +5,7 @@ import dominio.TipoLogradouro;
 import util.Conexao;
 
 import java.sql.*;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -64,7 +65,41 @@ public class TipoLogradouroDAO implements IDAO{
     }
 
     @Override
-    public List<EntidadeDominio> consultar(EntidadeDominio entidade) {
-        return List.of();
+    public List<EntidadeDominio> consultar(EntidadeDominio entidade) throws Exception {
+        TipoLogradouro tpl = (TipoLogradouro) entidade;
+        try{
+            List<EntidadeDominio> tipos = new ArrayList<>();
+            List<Object> parametros = new ArrayList<>();
+
+            StringBuilder sql = new StringBuilder();
+            sql.append("select * from crud_v2.tipo_logradouro tl ");
+            sql.append("where 1=1 ");
+
+            if(tpl.getId() != null){
+                sql.append("and tl.tpl_id = ? ");
+                parametros.add(tpl.getId());
+            }
+            if(tpl.getTpLogradouro() != null){
+                sql.append("and tl.tpl_tipo = ? ");
+                parametros.add(tpl.getTpLogradouro());
+            }
+
+            try(PreparedStatement pst = connection.prepareStatement(sql.toString())){
+                for(int i = 0; i < parametros.size(); i++){
+                    pst.setObject(i+1, parametros.get(i));
+                }
+                try(ResultSet rs = pst.executeQuery()){
+                    while(rs.next()){
+                        TipoLogradouro tpLogradouro = new TipoLogradouro();
+                        tpLogradouro.setId(rs.getInt("tpl_id"));
+                        tpLogradouro.setTpLogradouro(rs.getString("tpl_tipo"));
+                        tipos.add(tpLogradouro);
+                    }
+                }
+            }
+            return tipos;
+        } catch (Exception e) {
+            throw new Exception("Erro ao consultar tipo logradouro: " + e.getMessage(), e);
+        }
     }
 }

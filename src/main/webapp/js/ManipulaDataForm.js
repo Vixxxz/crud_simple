@@ -45,7 +45,7 @@ class ManipulaDataForm {
             // Monta um objeto JSON para envio, adicionando o `ranking` e os `enderecosRelacionados`
             const clienteJson = this.montaJson()
 
-            console.log("JSON gerado: ", JSON.stringify(clienteJson));
+            console.log("JSON gerado: ", JSON.stringify(clienteJson, null, 2));
 
             // Envia os dados para o servidor usando a API Fetch com uma requisição POST
             const resposta = await fetch('http://localhost:8080/crud_v3_war_exploded/controlecliente', {

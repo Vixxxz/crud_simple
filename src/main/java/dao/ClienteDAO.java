@@ -75,84 +75,90 @@ public class ClienteDAO implements IDAO{
     @Override
     public List<EntidadeDominio> consultar(EntidadeDominio entidade) throws Exception {
         List<EntidadeDominio> clientes = new ArrayList<>();
-        try{
+        try {
             Cliente cliente = (Cliente) entidade;
             List<Object> parametros = new ArrayList<>();
 
             StringBuilder sql = new StringBuilder();
-            sql.append("select * from crud_v2.cliente ");
-            sql.append("where 1=1");
+            sql.append("SELECT * FROM crud_v2.cliente c ");
+            sql.append("WHERE 1=1 ");
 
-
-            if(cliente.getId() != null){
-                sql.append("and c.cli_id = ? ");
+            if (cliente.getId() != null) {
+                sql.append("AND c.cli_id = ? ");
                 parametros.add(cliente.getId());
             }
-            if(isValidString(cliente.getRanking())){
-                sql.append("and c.cli_rank = ? ");
+            if (isStringValida(cliente.getRanking())) {
+                sql.append("AND c.cli_ranking = ? ");
                 parametros.add(cliente.getRanking());
             }
-            if(isValidString(cliente.getNome())){
-                sql.append("and c.cli_nome = ? ");
+            if (isStringValida(cliente.getNome())) {
+                sql.append("AND c.cli_nome = ? ");
                 parametros.add(cliente.getNome());
             }
-            if(isValidString(cliente.getGenero())){
-                sql.append("and c.cli_genero = ? ");
+            if (isStringValida(cliente.getGenero())) {
+                sql.append("AND c.cli_genero = ? ");
                 parametros.add(cliente.getGenero());
             }
-            if(isValidString(cliente.getCpf())){
-                sql.append("and c.cli_cpf = ? ");
+            if (isStringValida(cliente.getCpf())) {
+                sql.append("AND c.cli_cpf = ? ");
                 parametros.add(cliente.getCpf());
             }
-            if(isValidString(cliente.getTipoTelefone())){
-                sql.append("and c.cli_tp_tel = ? ");
+            if (isStringValida(cliente.getTipoTelefone())) {
+                sql.append("AND c.cli_tp_tel = ? ");
                 parametros.add(cliente.getTipoTelefone());
             }
-            if(isValidString(cliente.getTelefone())){
-                sql.append("and c.cli_tel = ? ");
+            if (isStringValida(cliente.getTelefone())) {
+                sql.append("AND c.cli_tel = ? ");
                 parametros.add(cliente.getTelefone());
             }
-            if(isValidString(cliente.getEmail())){
-                sql.append("and c.cli_email = ? ");
+            if (isStringValida(cliente.getEmail())) {
+                sql.append("AND c.cli_email = ? ");
                 parametros.add(cliente.getEmail());
             }
-            if(isValidString(cliente.getSenha())){
-                sql.append("and c.cli_senha = ? ");
+            if (isStringValida(cliente.getSenha())) {
+                sql.append("AND c.cli_senha = ? ");
                 parametros.add(cliente.getSenha());
             }
-            if(cliente.getDataNascimento() != null){
-                sql.append("and c.cli_dt_nasc = ? ");
+            if (cliente.getDataNascimento() != null) {
+                sql.append("AND c.cli_dt_nasc = ? ");
                 parametros.add(cliente.getDataNascimento());
             }
+
             try (PreparedStatement pst = connection.prepareStatement(sql.toString())) {
                 for (int i = 0; i < parametros.size(); i++) {
                     pst.setObject(i + 1, parametros.get(i));
                 }
 
-                try(ResultSet rs = pst.executeQuery()){
+                try (ResultSet rs = pst.executeQuery()) {
                     while (rs.next()) {
-                        Cliente cli = new Cliente();
-                        cli.setId(rs.getInt("cli_id"));
-                        cli.setRanking(rs.getString("cli_rank"));
-                        cli.setNome(rs.getString("cli_nome"));
-                        cli.setGenero(rs.getString("cli_genero"));
-                        cli.setCpf(rs.getString("cli_cpf"));
-                        cli.setTipoTelefone(rs.getString("cli_tp_tel"));
-                        cli.setTelefone(rs.getString("cli_tel"));
-                        cli.setEmail(rs.getString("cli_email"));
-                        cli.setSenha(rs.getString("cli_senha"));
-                        cli.setDataNascimento(rs.getDate("cli_dt_nasc"));
-                        clientes.add(cli);
-                    }                }
+                        clientes.add(mapeiaCliente(rs));
+                    }
+                }
             }
             return clientes;
         } catch (Exception e) {
-            logger.log(Level.SEVERE, "Erro ao salvar cliente: " + e.getMessage() + " " + clientes, e);
-            throw new Exception("Erro ao salvar o cliente: " + e.getMessage() + " " + clientes, e);
+            logger.log(Level.SEVERE, "Erro ao consultar clientes: " + e.getMessage(), e);
+            throw new Exception("Erro ao consultar clientes: " + e.getMessage(), e);
         }
     }
 
-    private boolean isValidString(String value) {
+    private boolean isStringValida(String value) {
         return value != null && !value.isBlank();
     }
+
+    private Cliente mapeiaCliente(ResultSet rs) throws SQLException {
+        Cliente cli = new Cliente();
+        cli.setId(rs.getInt("cli_id"));
+        cli.setRanking(rs.getString("cli_ranking"));
+        cli.setNome(rs.getString("cli_nome"));
+        cli.setGenero(rs.getString("cli_genero"));
+        cli.setCpf(rs.getString("cli_cpf"));
+        cli.setTipoTelefone(rs.getString("cli_tp_tel"));
+        cli.setTelefone(rs.getString("cli_tel"));
+        cli.setEmail(rs.getString("cli_email"));
+        cli.setSenha(rs.getString("cli_senha"));
+        cli.setDataNascimento(rs.getDate("cli_dt_nasc"));
+        return cli;
+    }
+
 }

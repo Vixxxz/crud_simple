@@ -32,19 +32,8 @@ public class FachadaDAO implements IFachada {
             List<EntidadeDominio> entidadesSalvas = new ArrayList<>();
             for(EntidadeDominio entidade : entidades){
                 switch (entidade) {
-                    case Cliente cliente -> {
-                        Cliente clienteSalvo = (Cliente) procuraOuSalvaCliente(cliente, connection);
-                        logger.log(Level.INFO, "cliente salvo " + clienteSalvo.getCpf());
-                        entidades.stream()
-                                .filter(e -> e instanceof ClienteEndereco)
-                                .forEach(e -> ((ClienteEndereco) e).setCliente(clienteSalvo));
-                        entidadesSalvas.add(clienteSalvo);
-                    }
-                    case ClienteEndereco clienteEndereco -> {
-                        clienteEndereco = (ClienteEndereco) procuraOuSalvaClienteEndereco(clienteEndereco, connection);
-                        logger.log(Level.INFO, "cliente endereco salvo: " + clienteEndereco.getNumero());
-                        entidadesSalvas.add(clienteEndereco);
-                    }
+                    case Cliente cliente -> salvaCliente(cliente, entidadesSalvas, entidades);
+                    case ClienteEndereco clienteEndereco -> salvaClienteEndereco(clienteEndereco, entidadesSalvas);
 //                    case Cartao cartao -> {
 //                    }
 //                    case Transacao transacao -> {
@@ -77,29 +66,34 @@ public class FachadaDAO implements IFachada {
         }
     }
 
-    private EntidadeDominio procuraOuSalvaClienteEndereco(ClienteEndereco clienteEndereco, Connection connection) throws Exception {
-        //todo: implementar a verificação se o cliente endereço ja existe antes de salvar
-        IDAO clienteEnderecoDAO = new ClienteEnderecoDAO(connection);
-        List<EntidadeDominio> clientesSalvos = clienteEnderecoDAO.consultar(clienteEndereco);
-        if(clientesSalvos.isEmpty()){
-            return clienteEnderecoDAO.salvar(clienteEndereco);
-        }else{
-            throw new Exception("Cliente Endereço já existente.");
+    private void salvaCliente(Cliente cliente, List<EntidadeDominio> entidadesSalvas, List<EntidadeDominio> entidades) throws Exception {
+        IDAO clienteDAO = new ClienteDAO(connection);
+        List<EntidadeDominio> clientesSalvos = clienteDAO.consultar(cliente);
+
+        if (clientesSalvos.isEmpty()) {
+            Cliente clienteSalvo = (Cliente) clienteDAO.salvar(cliente);
+            logger.log(Level.INFO, "Cliente salvo: " + clienteSalvo.getCpf());
+
+            entidades.stream()
+                    .filter(e -> e instanceof ClienteEndereco)
+                    .forEach(e -> ((ClienteEndereco) e).setCliente(clienteSalvo));
+
+            entidadesSalvas.add(clienteSalvo);
+        } else {
+            throw new Exception("Cliente já existente: CPF " + cliente.getCpf());
         }
     }
 
-    private EntidadeDominio procuraOuSalvaCliente(Cliente cliente, Connection connection) throws Exception {
-        //todo: implementar a verificação se o cliente ja existe antes de salvar
-        try{
-            IDAO clienteDAO = new ClienteDAO(connection);
-            List<EntidadeDominio> clientesSalvos = clienteDAO.consultar(cliente);
-            if(clientesSalvos.isEmpty()){
-                return clienteDAO.salvar(cliente);
-            }else{
-                throw new Exception("Cliente já existente.");
-            }
-        }catch(Exception e){
-            throw new Exception(e.getMessage(), e);
+    private void salvaClienteEndereco(ClienteEndereco clienteEndereco, List<EntidadeDominio> entidadesSalvas) throws Exception {
+        IDAO clienteEnderecoDAO = new ClienteEnderecoDAO(connection);
+        List<EntidadeDominio> cliEndSalvos = clienteEnderecoDAO.consultar(clienteEndereco);
+
+        if (cliEndSalvos.isEmpty()) {
+            clienteEndereco = (ClienteEndereco) clienteEnderecoDAO.salvar(clienteEndereco);
+            logger.log(Level.INFO, "Cliente endereço salvo: Número " + clienteEndereco.getNumero());
+            entidadesSalvas.add(clienteEndereco);
+        } else {
+            throw new Exception("Cliente Endereço já existente ");
         }
     }
 
