@@ -1,5 +1,6 @@
 package fachada;
 
+import dominio.Bandeira;
 import dominio.Cliente;
 import dominio.ClienteEndereco;
 import dominio.EntidadeDominio;
@@ -26,6 +27,8 @@ public class Fachada implements IFachada{
                     }
                     case ClienteEndereco clienteEndereco ->
                             processarValidacoes(clienteEndereco, getValidacoes(clienteEndereco), sb);
+                    case Bandeira bandeira ->
+                            processarValidacoes(bandeira, getValidacoes(bandeira), sb);
 //                    case Cartao cartao -> {
 //                    }
 //                    case Transacao transacao -> {
@@ -63,6 +66,8 @@ public class Fachada implements IFachada{
             validacoes.add(new ValidaTelefone());
         } else if (entidade instanceof ClienteEndereco) {
             validacoes.add(new ValidaEndereco());
+        } else if (entidade instanceof Bandeira) {
+            validacoes.add(new ValidaDadosBandeira());
         }
         return validacoes;
     }

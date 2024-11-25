@@ -1,8 +1,10 @@
 package fachada;
 
+import dao.BandeiraDAO;
 import dao.ClienteDAO;
 import dao.ClienteEnderecoDAO;
 import dao.IDAO;
+import dominio.Bandeira;
 import dominio.Cliente;
 import dominio.ClienteEndereco;
 import dominio.EntidadeDominio;
@@ -34,6 +36,7 @@ public class FachadaDAO implements IFachada {
                 switch (entidade) {
                     case Cliente cliente -> salvaCliente(cliente, entidadesSalvas, entidades);
                     case ClienteEndereco clienteEndereco -> salvaClienteEndereco(clienteEndereco, entidadesSalvas);
+                    case Bandeira bandeira -> salvaBandeira(bandeira, entidadesSalvas);
 //                    case Cartao cartao -> {
 //                    }
 //                    case Transacao transacao -> {
@@ -63,6 +66,19 @@ public class FachadaDAO implements IFachada {
                     logger.log(Level.SEVERE, "Erro ao tentar fechar a conexão: " + sqlEx.getMessage(), sqlEx);
                 }
             }
+        }
+    }
+
+    private void salvaBandeira(Bandeira bandeira, List<EntidadeDominio> entidadesSalvas) throws Exception {
+        IDAO bandeiraDAO = new BandeiraDAO(connection);
+        List<EntidadeDominio> bandeirasSalvas = bandeiraDAO.consultar(bandeira);
+
+        if (bandeirasSalvas.isEmpty()) {
+            bandeira = (Bandeira) bandeiraDAO.salvar(bandeira);
+            logger.log(Level.INFO, "Bandeira salva: " + bandeira.getNomeBandeira());
+            entidadesSalvas.add(bandeira);
+        } else {
+            throw new Exception("Bandeira já existente: " + bandeira.getNomeBandeira());
         }
     }
 

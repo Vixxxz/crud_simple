@@ -1,0 +1,107 @@
+package dao;
+
+import dominio.Bandeira;
+import dominio.EntidadeDominio;
+import util.Conexao;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+public class BandeiraDAO implements IDAO{
+    private Connection connection;
+    private static final Logger logger = Logger.getLogger(BandeiraDAO.class.getName());
+
+    public BandeiraDAO (Connection connection){
+        this.connection = connection;
+    }
+
+    @Override
+    public EntidadeDominio salvar(EntidadeDominio entidade) throws Exception {
+        Bandeira bandeira = (Bandeira) entidade;
+        StringBuilder sql = new StringBuilder();
+        sql.append("INSERT INTO bandeira(ban_bandeira, ban_dt_cadastro) VALUES (?,?)");
+
+        try{
+            if(connection == null || connection.isClosed()) {
+                connection = Conexao.getConnectionMySQL();
+            }
+
+            try(PreparedStatement pst = connection.prepareStatement(sql.toString(), PreparedStatement.RETURN_GENERATED_KEYS)){
+                pst.setString(1, bandeira.getNomeBandeira());
+                pst.setTimestamp(2, new java.sql.Timestamp(bandeira.getDtCadastro().getTime()));
+
+                pst.executeUpdate();
+
+                try(ResultSet rs = pst.getGeneratedKeys()){
+                    if(rs.next()){
+                        int idBandeira = rs.getInt(1);
+                        bandeira.setId(idBandeira);
+                    }
+                }
+            }
+            return bandeira;
+        } catch(Exception e){
+            try{
+                connection.rollback();
+            }catch(SQLException rollbackEx){
+                logger.log(Level.SEVERE, "Erro ao tentar realizar o rollback " + rollbackEx.getMessage(), rollbackEx);
+            }
+            logger.log(Level.SEVERE, "Erro ao salvar bandeira: " + e.getMessage() + " " + bandeira, e);
+            throw new Exception("Erro ao salvar a bandeira: " + e.getMessage() + " " + bandeira, e); // Lançar exceção em vez de retornar null
+        }
+    }
+
+    @Override
+    public void alterar(EntidadeDominio entidade) {
+
+    }
+
+    @Override
+    public void excluir(EntidadeDominio entidade) {
+
+    }
+
+    @Override
+    public List<EntidadeDominio> consultar(EntidadeDominio entidade) throws Exception {
+        Bandeira bandeira = (Bandeira) entidade;
+        try {
+            List<EntidadeDominio> bandeiras = new ArrayList<>();
+            List<Object> parametros = new ArrayList<>();
+            StringBuilder sql = new StringBuilder();
+            sql.append("SELECT * FROM bandeira WHERE 1=1");
+
+            if(bandeira.getId()!= null){
+                sql.append(" AND ban_id = ? ");
+                parametros.add(bandeira.getId());
+            }
+
+            if(bandeira.getNomeBandeira()!= null &&!bandeira.getNomeBandeira().isBlank()){
+                sql.append(" AND ban_bandeira = ? ");
+                parametros.add(bandeira.getNomeBandeira());
+            }
+            try(PreparedStatement pst = connection.prepareStatement(sql.toString())){
+                for(int i = 0; i < parametros.size(); i++) {
+                    pst.setObject(i+1, parametros.get(i));
+                }
+
+                try(ResultSet rs = pst.executeQuery()){
+                    while(rs.next()) {
+                        Bandeira ban = new Bandeira();
+                        ban.setId(rs.getInt("ban_id"));
+                        ban.setNomeBandeira(rs.getString("ban_bandeira"));
+                        bandeiras.add(ban);
+                    }
+                }
+            }
+            return bandeiras;
+        }catch (Exception e) {
+            throw new Exception("Erro ao consultar a bandeira: " + e.getMessage(), e);
+        }
+    }
+}
