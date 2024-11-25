@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Fachada implements IFachada{
-    FachadaDAO fachadaDAO = new FachadaDAO();
+    IFachada fachadaDAO = new FachadaDAO();
     public Fachada() throws SQLException, ClassNotFoundException {
     }
 
