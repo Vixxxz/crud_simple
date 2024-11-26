@@ -1,9 +1,6 @@
 package fachada;
 
-import dominio.Bandeira;
-import dominio.Cliente;
-import dominio.ClienteEndereco;
-import dominio.EntidadeDominio;
+import dominio.*;
 import strategy.*;
 
 import java.sql.SQLException;
@@ -29,7 +26,8 @@ public class Fachada implements IFachada{
                             processarValidacoes(clienteEndereco, getValidacoes(clienteEndereco), sb);
                     case Bandeira bandeira ->
                             processarValidacoes(bandeira, getValidacoes(bandeira), sb);
-//                    case Cartao cartao -> {
+                    case Cartao cartao ->
+                            processarValidacoes(cartao, getValidacoes(cartao), sb);
 //                    }
 //                    case Transacao transacao -> {
 //                    }
@@ -50,7 +48,7 @@ public class Fachada implements IFachada{
         }
     }
 
-    private void processarValidacoes(EntidadeDominio entidade, List<IStrategy> estrategias, StringBuilder sb) {
+    private void processarValidacoes(EntidadeDominio entidade, List<IStrategy> estrategias, StringBuilder sb) throws Exception {
         for (IStrategy strategy : estrategias) {
             strategy.processar(entidade, sb);
         }
@@ -68,6 +66,10 @@ public class Fachada implements IFachada{
             validacoes.add(new ValidaEndereco());
         } else if (entidade instanceof Bandeira) {
             validacoes.add(new ValidaDadosBandeira());
+        } else if (entidade instanceof Cartao) {
+            validacoes.add(new ValidaDadosCartao());
+            validacoes.add(new ValidaBandeiraExistente());
+            validacoes.add(new ValidaCartaoPreferencial());
         }
         return validacoes;
     }

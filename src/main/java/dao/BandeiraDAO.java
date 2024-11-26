@@ -21,6 +21,8 @@ public class BandeiraDAO implements IDAO{
         this.connection = connection;
     }
 
+    public BandeiraDAO(){}
+
     @Override
     public EntidadeDominio salvar(EntidadeDominio entidade) throws Exception {
         Bandeira bandeira = (Bandeira) entidade;
@@ -74,15 +76,15 @@ public class BandeiraDAO implements IDAO{
             List<EntidadeDominio> bandeiras = new ArrayList<>();
             List<Object> parametros = new ArrayList<>();
             StringBuilder sql = new StringBuilder();
-            sql.append("SELECT * FROM bandeira WHERE 1=1");
+            sql.append("SELECT * FROM crud_v2.bandeira b WHERE 1=1");
 
             if(bandeira.getId()!= null){
-                sql.append(" AND ban_id = ? ");
+                sql.append(" AND b.ban_id = ? ");
                 parametros.add(bandeira.getId());
             }
 
             if(bandeira.getNomeBandeira()!= null &&!bandeira.getNomeBandeira().isBlank()){
-                sql.append(" AND ban_bandeira = ? ");
+                sql.append(" AND b.ban_bandeira = ? ");
                 parametros.add(bandeira.getNomeBandeira());
             }
             try(PreparedStatement pst = connection.prepareStatement(sql.toString())){

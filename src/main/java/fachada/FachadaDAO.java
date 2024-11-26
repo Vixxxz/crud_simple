@@ -1,13 +1,7 @@
 package fachada;
 
-import dao.BandeiraDAO;
-import dao.ClienteDAO;
-import dao.ClienteEnderecoDAO;
-import dao.IDAO;
-import dominio.Bandeira;
-import dominio.Cliente;
-import dominio.ClienteEndereco;
-import dominio.EntidadeDominio;
+import dao.*;
+import dominio.*;
 import util.Conexao;
 
 import java.sql.Connection;
@@ -37,7 +31,7 @@ public class FachadaDAO implements IFachada {
                     case Cliente cliente -> salvaCliente(cliente, entidadesSalvas, entidades);
                     case ClienteEndereco clienteEndereco -> salvaClienteEndereco(clienteEndereco, entidadesSalvas);
                     case Bandeira bandeira -> salvaBandeira(bandeira, entidadesSalvas);
-//                    case Cartao cartao -> {
+                    case Cartao cartao -> salvaCartao(cartao, entidadesSalvas);
 //                    }
 //                    case Transacao transacao -> {
 //                    }
@@ -66,6 +60,19 @@ public class FachadaDAO implements IFachada {
                     logger.log(Level.SEVERE, "Erro ao tentar fechar a conexão: " + sqlEx.getMessage(), sqlEx);
                 }
             }
+        }
+    }
+
+    private void salvaCartao(Cartao cartao, List<EntidadeDominio> entidadesSalvas) throws Exception {
+        IDAO cartaoDAO = new CartaoDAO(connection);
+        List<EntidadeDominio> cartoesSalvos = cartaoDAO.consultar(cartao);
+
+        if (cartoesSalvos.isEmpty()) {
+            Cartao cartaoSalvo = (Cartao) cartaoDAO.salvar(cartao);
+            logger.log(Level.INFO, "Cartão salvo: " + cartaoSalvo.getNumeroCartao());
+            entidadesSalvas.add(cartaoSalvo);
+        } else {
+            throw new Exception("Cartão já existente: " + cartao.getNumeroCartao());
         }
     }
 
@@ -121,7 +128,57 @@ public class FachadaDAO implements IFachada {
 
     }
 
-    public List<EntidadeDominio> consultar(EntidadeDominio entidade, StringBuilder sb) {
-        return List.of();
+    public List<EntidadeDominio> consultar(EntidadeDominio entidade, StringBuilder sb) throws Exception {
+        try{
+            if(connection == null || connection.isClosed()){
+                connection = Conexao.getConnectionMySQL();
+            }
+            List<EntidadeDominio> entidadesSalvas = new ArrayList<>();
+            switch (entidade) {
+                case Cliente cliente -> entidadesSalvas = consultaCliente(cliente);
+                case ClienteEndereco clienteEndereco -> entidadesSalvas = consultaClienteEndereco(clienteEndereco);
+                case Bandeira bandeira -> entidadesSalvas = consultaBandeira(bandeira);
+                case Cartao cartao -> entidadesSalvas = consultaCartao(cartao);
+//                    }
+//                    case Transacao transacao -> {
+//                    }
+//                    case Log log -> {
+//                    }
+                case null, default ->
+                        throw new IllegalArgumentException("Tipo de entidade não suportado: " + entidade);
+            }
+            return entidadesSalvas;
+        }catch (Exception e){
+            logger.log(Level.SEVERE, e.getMessage() + " " + entidade, e);
+            throw new Exception(e.getMessage() + " " + entidade, e);
+        }finally {
+            if (connection != null) {
+                try {
+                    connection.close();
+                } catch (SQLException sqlEx) {
+                    logger.log(Level.SEVERE, "Erro ao tentar fechar a conexão: " + sqlEx.getMessage(), sqlEx);
+                }
+            }
+        }
+    }
+
+    private List<EntidadeDominio> consultaCartao(Cartao cartao) throws Exception {
+        IDAO cartaoDAO = new CartaoDAO(connection);
+        return cartaoDAO.consultar(cartao);
+    }
+
+    private List<EntidadeDominio> consultaBandeira(Bandeira bandeira) throws Exception {
+        IDAO bandeiraDAO = new BandeiraDAO(connection);
+        return bandeiraDAO.consultar(bandeira);
+    }
+
+    private List<EntidadeDominio> consultaClienteEndereco(ClienteEndereco clienteEndereco) throws Exception {
+        IDAO clienteEnderecoDAO = new ClienteEnderecoDAO(connection);
+        return clienteEnderecoDAO.consultar(clienteEndereco);
+    }
+
+    private List<EntidadeDominio> consultaCliente(Cliente cliente) throws Exception {
+        IDAO clienteDAO = new ClienteDAO(connection);
+        return clienteDAO.consultar(cliente);
     }
 }
