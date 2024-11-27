@@ -2,6 +2,7 @@ package fachada;
 
 import dao.*;
 import dominio.*;
+import strategy.EncriptografaSenha;
 import util.Conexao;
 
 import java.sql.Connection;
@@ -120,8 +121,60 @@ public class FachadaDAO implements IFachada {
         }
     }
 
-    public void alterar(EntidadeDominio entidade, StringBuilder sb) {
+    public void alterar(EntidadeDominio entidade, StringBuilder sb) throws Exception {
+        try{
+            switch (entidade) {
+                case Cliente cliente -> alteraCliente(cliente);
+                case ClienteEndereco clienteEndereco -> alteraClienteEndereco(clienteEndereco);
+                case Bandeira bandeira -> alteraBandeira(bandeira);
+                case Cartao cartao -> alteraCartao(cartao);
+//                    }
+//                    case Transacao transacao -> {
+//                    }
+//                    case Log log -> {
+//                    }
+                case null, default ->
+                        throw new IllegalArgumentException("Tipo de entidade não suportado: " + entidade);
+            }
+        } catch (Exception e) {
+            throw new Exception("Erro ao alterar: " + e.getMessage(), e);
+        }
+    }
 
+    private void alteraCartao(Cartao cartao) throws Exception {
+        try{
+            CartaoDAO cartaoDAO = new CartaoDAO(connection);
+            cartaoDAO.alterar(cartao);
+        } catch (Exception e) {
+            throw new Exception(e.getMessage(), e);
+        }
+    }
+
+    private void alteraBandeira(Bandeira bandeira) throws Exception {
+        try{
+            BandeiraDAO bandeiraDAO = new BandeiraDAO(connection);
+            bandeiraDAO.alterar(bandeira);
+        } catch (Exception e) {
+            throw new Exception(e.getMessage(), e);
+        }
+    }
+
+    private void alteraClienteEndereco(ClienteEndereco clienteEndereco) throws Exception {
+        try{
+            ClienteEnderecoDAO clienteEnderecoDAO = new ClienteEnderecoDAO(connection);
+            clienteEnderecoDAO.alterar(clienteEndereco);
+        } catch (Exception e) {
+            throw new Exception(e.getMessage(), e);
+        }
+    }
+
+    private void alteraCliente(Cliente cliente) throws Exception {
+        try{
+            ClienteDAO clienteDAO = new ClienteDAO(connection);
+            clienteDAO.alterar(cliente);
+        } catch (Exception e) {
+            throw new Exception(e.getMessage(), e);
+        }
     }
 
     public void excluir(EntidadeDominio entidade, StringBuilder sb) {

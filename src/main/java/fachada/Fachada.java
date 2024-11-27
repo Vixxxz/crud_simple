@@ -22,12 +22,15 @@ public class Fachada implements IFachada{
                         processarValidacoes(cliente, getValidacoes(cliente), sb);
                         cliente.setSenha(criptografa.processar(cliente, sb));
                     }
-                    case ClienteEndereco clienteEndereco ->
-                            processarValidacoes(clienteEndereco, getValidacoes(clienteEndereco), sb);
-                    case Bandeira bandeira ->
-                            processarValidacoes(bandeira, getValidacoes(bandeira), sb);
-                    case Cartao cartao ->
-                            processarValidacoes(cartao, getValidacoes(cartao), sb);
+                    case ClienteEndereco clienteEndereco -> {
+                        processarValidacoes(clienteEndereco, getValidacoes(clienteEndereco), sb);
+                    }
+                    case Bandeira bandeira -> {
+                        processarValidacoes(bandeira, getValidacoes(bandeira), sb);
+                    }
+                    case Cartao cartao -> {
+                        processarValidacoes(cartao, getValidacoes(cartao), sb);
+                    }
 //                    }
 //                    case Transacao transacao -> {
 //                    }
@@ -84,30 +87,90 @@ public class Fachada implements IFachada{
     }
 
     @Override
-    public void alterar(EntidadeDominio entidade, StringBuilder sb) {
+    public void alterar(EntidadeDominio entidade, StringBuilder sb) throws Exception {
         try{
+            StringBuilder erros = new StringBuilder();
             switch (entidade) {
                 case Cliente cliente -> {
                     EncriptografaSenha criptografa = new EncriptografaSenha();
                     processarValidacoes(cliente, getValidacoes(cliente), sb);
                     cliente.setSenha(criptografa.processar(cliente, sb));
+                    if(sb.isEmpty()) {
+                        alteraCliente(cliente, erros);
+                    }else {
+                        throw new Exception("Existem erros de validação: " + sb);
+                    }
                 }
-                case ClienteEndereco clienteEndereco ->
-                        processarValidacoes(clienteEndereco, getValidacoes(clienteEndereco), sb);
-                case Bandeira bandeira ->
-                        processarValidacoes(bandeira, getValidacoes(bandeira), sb);
-                case Cartao cartao ->
-                        processarValidacoes(cartao, getValidacoes(cartao), sb);
-    //                    }
-    //                    case Transacao transacao -> {
-    //                    }
-    //                    case Log log -> {
-    //                    }
+                case ClienteEndereco clienteEndereco -> {
+                    processarValidacoes(clienteEndereco, getValidacoes(clienteEndereco), sb);
+                    if(sb.isEmpty()) {
+                        alteraClienteEndereco(clienteEndereco, erros);
+                    }else {
+                        throw new Exception("Existem erros de validação: " + sb);
+                    }
+                }
+                case Bandeira bandeira -> {
+                    processarValidacoes(bandeira, getValidacoes(bandeira), sb);
+                    if(sb.isEmpty()) {
+                        alteraBandeira(bandeira, erros);
+                    }else {
+                        throw new Exception("Existem erros de validação: " + sb);
+                    }
+                }
+                case Cartao cartao -> {
+                    processarValidacoes(cartao, getValidacoes(cartao), sb);
+                    if(sb.isEmpty()) {
+                        alteraCartao(cartao, erros);
+                    }else{
+                        throw new Exception("Existem erros de validação: " + sb);
+                    }
+                }
+//                    }
+//                    case Transacao transacao -> {
+//                    }
+//                    case Log log -> {
+//                    }
                 case null, default ->
                         throw new IllegalArgumentException("Tipo de entidade não suportado: " + entidade);
             }
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new Exception("Erro ao alterar: " + e.getMessage(), e);
+        }
+    }
+
+    private void alteraCartao(Cartao cartao, StringBuilder sb) {
+        try {
+            cartao.complementarDtCadastro();
+            fachadaDAO.alterar(cartao, sb);
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao alterar cartao: " + e.getMessage(), e);
+        }
+    }
+
+    private void alteraBandeira(Bandeira bandeira, StringBuilder sb) {
+        try {
+            bandeira.complementarDtCadastro();
+            fachadaDAO.alterar(bandeira, sb);
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao alterar bandeira: " + e.getMessage(), e);
+        }
+    }
+
+    private void alteraClienteEndereco(ClienteEndereco clienteEndereco, StringBuilder sb) {
+        try {
+            clienteEndereco.complementarDtCadastro();
+            fachadaDAO.alterar(clienteEndereco, sb);
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao alterar cliente endereco: " + e.getMessage(), e);
+        }
+    }
+
+    private void alteraCliente(Cliente cliente, StringBuilder sb) {
+        try {
+            cliente.complementarDtCadastro();
+            fachadaDAO.alterar(cliente, sb);
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao alterar cliente: " + e.getMessage(), e);
         }
     }
 

@@ -142,7 +142,7 @@ public class ClienteControle extends HttpServlet {
 
             try {
                 fachada.alterar(entidadesParaAtualizar.getFirst(), erros);
-                enviarRespostaSucesso(resp, "Cliente e/ou Cliente Endereço atualizado com sucesso!", entidadesParaAtualizar);
+                enviarRespostaSucesso(resp, "Cliente atualizado com sucesso!", entidadesParaAtualizar);
             } catch (Exception e) {
                 e.printStackTrace();
                 enviarRespostaErro(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Erro ao atualizar cliente e cliente endereco: " + e.getMessage());

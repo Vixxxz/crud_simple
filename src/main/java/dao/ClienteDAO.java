@@ -63,8 +63,55 @@ public class ClienteDAO implements IDAO{
     }
 
     @Override
-    public void alterar(EntidadeDominio entidade) {
+    public void alterar(EntidadeDominio entidade) throws Exception {
+        Cliente cliente = (Cliente) entidade;
+        try {
+            if (connection == null) {
+                connection = Conexao.getConnectionMySQL();
+            }
+            connection.setAutoCommit(false);
 
+            StringBuilder sql = new StringBuilder();
+            sql.append("UPDATE crud_v2.cliente SET ");
+            sql.append("cli_nome = ?, cli_cpf = ?, cli_email = ?, cli_senha = ?, ");
+            sql.append("cli_genero = ?, cli_dt_nasc = ?, cli_tp_tel = ?, cli_tel = ?, ");
+            sql.append("cli_ranking = ?, cli_dt_cadastro = ? ");
+            sql.append("WHERE cli_id = ?");
+
+            logger.log(Level.INFO, "Atualizando cliente com ID: " + cliente.getId());
+
+            try (PreparedStatement pst = connection.prepareStatement(sql.toString())) {
+                pst.setString(1, cliente.getNome());
+                pst.setString(2, cliente.getCpf());
+                pst.setString(3, cliente.getEmail());
+                pst.setString(4, cliente.getSenha());
+                pst.setString(5, cliente.getGenero());
+                pst.setDate(6, new Date(cliente.getDataNascimento().getTime()));
+                pst.setString(7, cliente.getTipoTelefone());
+                pst.setString(8, cliente.getTelefone());
+                pst.setString(9, cliente.getRanking());
+                pst.setTimestamp(10, new Timestamp(cliente.getDtCadastro().getTime()));
+                pst.setInt(11, cliente.getId());
+
+                int rowsUpdated = pst.executeUpdate();
+                if (rowsUpdated == 0) {
+                    throw new Exception("Nenhum cliente encontrado com o ID: " + cliente.getId());
+                }
+            }
+
+            connection.commit();
+            logger.log(Level.INFO, "Cliente atualizado com sucesso. ID: " + cliente.getId());
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Erro ao atualizar cliente: " + e.getMessage(), e);
+            if (connection != null) {
+                try {
+                    connection.rollback();
+                } catch (SQLException rollbackEx) {
+                    logger.log(Level.SEVERE, "Erro ao realizar rollback: " + rollbackEx.getMessage(), rollbackEx);
+                }
+            }
+            throw new Exception("Erro ao atualizar o cliente: " + e.getMessage(), e);
+        }
     }
 
     @Override
