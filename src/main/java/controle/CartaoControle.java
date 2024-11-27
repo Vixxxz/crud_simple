@@ -33,28 +33,46 @@ public class CartaoControle extends HttpServlet {
 
         try {
             IFachada fachada = new Fachada();
-            JsonObject jsonObject = lerJsonComoObjeto(req);
-            if (!jsonObject.has("Cartao")) {
-                enviarRespostaErro(resp, HttpServletResponse.SC_BAD_REQUEST, "JSON inválido: Campos obrigatórios ausentes.");
-                return;
+            Cartao filtroCartao = new Cartao();
+            Cliente filtroCliente = new Cliente();
+            Bandeira filtroBandeira = new Bandeira();
+
+            String idCartao = req.getParameter("idCartao");
+            String idCliente = req.getParameter("idCliente");
+            String idBandeira = req.getParameter("idBandeira");
+            String numeroCartao = req.getParameter("numeroCartao");
+            String nomeCliente = req.getParameter("nomeCliente");
+
+            if (idCartao != null && !idCartao.isBlank()) {
+                filtroCartao.setId(Integer.parseInt(idCartao));
+            }
+            if (numeroCartao != null && !numeroCartao.isBlank()) {
+                filtroCartao.setNumero(numeroCartao);
             }
 
-            List<EntidadeDominio> entidades = extrairEntidades(jsonObject, gson);
-
-            if (entidades.isEmpty()) {
-                enviarRespostaErro(resp, HttpServletResponse.SC_BAD_REQUEST, "Nenhuma entidade fornecida para consulta.");
-                return;
+            if (idCliente != null && !idCliente.isBlank()) {
+                filtroCliente.setId(Integer.parseInt(idCliente));
             }
+            if (nomeCliente != null && !nomeCliente.isBlank()) {
+                filtroCliente.setNome(nomeCliente);
+            }
+            filtroCartao.setCliente(filtroCliente);
 
-            List<EntidadeDominio> resultados = fachada.consultar(entidades.getFirst());
+            if (idBandeira != null && !idBandeira.isBlank()) {
+                filtroBandeira.setId(Integer.parseInt(idBandeira));
+            }
+            filtroCartao.setBandeira(filtroBandeira);
 
-            enviarRespostaSucesso(resp, "Consulta realizada com sucesso!", resultados);
+            List<EntidadeDominio> resultados = fachada.consultar(filtroCartao);
 
-        } catch (JsonSyntaxException e) {
-            // JSON inválido ou mal formatado
-            enviarRespostaErro(resp, HttpServletResponse.SC_BAD_REQUEST, "Erro ao processar JSON: " + e.getMessage());
+            if (resultados.isEmpty()) {
+                enviarRespostaErro(resp, HttpServletResponse.SC_NOT_FOUND, "Nenhum cartão encontrado com os filtros fornecidos.");
+            } else {
+                enviarRespostaSucesso(resp, "Consulta realizada com sucesso!", resultados);
+            }
+        } catch (NumberFormatException e) {
+            enviarRespostaErro(resp, HttpServletResponse.SC_BAD_REQUEST, "Erro nos parâmetros: " + e.getMessage());
         } catch (Exception e) {
-            // Outros erros inesperados
             e.printStackTrace();
             enviarRespostaErro(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Erro inesperado: " + e.getMessage());
         }
@@ -114,9 +132,9 @@ public class CartaoControle extends HttpServlet {
 
     private List<EntidadeDominio> extrairEntidades(JsonObject jsonObject, Gson gson) {
         List<EntidadeDominio> entidadesParaSalvar = new ArrayList<>();
-        Cartao cartao = null;
-        Cliente cliente = null;
-        Bandeira bandeira = null;
+        Cartao cartao = new Cartao();
+        Cliente cliente = new Cliente();
+        Bandeira bandeira = new Bandeira();
         if(jsonObject.has("Cartao")){
             // Extrai a informação do campo "Bandeira" do JSON e converte para um objeto do tipo Bandeira.
             // gson.fromJson: converte JSON para um objeto Java. Aqui, é passado o JSON do campo "Bandeira".

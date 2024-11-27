@@ -29,27 +29,38 @@ public class ClienteEnderecoControle extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         configurarCodificacao(req, resp);
-        Gson gson = new Gson();
 
         try {
             IFachada fachada = new Fachada();
-            JsonObject jsonObject = lerJsonComoObjeto(req);
-            List<EntidadeDominio> entidades = extrairEntidades(jsonObject, gson);
+            Cliente filtroCliente = new Cliente();
+            ClienteEndereco filtroClienteEndereco = new ClienteEndereco();
 
-            if (entidades.isEmpty()) {
-                enviarRespostaErro(resp, HttpServletResponse.SC_BAD_REQUEST, "Nenhuma entidade fornecida para consulta.");
-                return;
+            String idCliente = req.getParameter("idCliente");
+            String nomeCliente = req.getParameter("nomeCliente");
+            String cpfCliente = req.getParameter("cpfCliente");
+
+            if (idCliente != null && !idCliente.isBlank()) {
+                filtroCliente.setId(Integer.parseInt(idCliente));
+            }
+            if (nomeCliente != null && !nomeCliente.isBlank()) {
+                filtroCliente.setNome(nomeCliente);
+            }
+            if (cpfCliente != null && !cpfCliente.isBlank()) {
+                filtroCliente.setCpf(cpfCliente);
             }
 
-            List<EntidadeDominio> resultados = fachada.consultar(entidades.getFirst());
+            filtroClienteEndereco.setCliente(filtroCliente);
 
-            enviarRespostaSucesso(resp, "Consulta realizada com sucesso!", resultados);
+            List<EntidadeDominio> resultados = fachada.consultar(filtroClienteEndereco);
 
-        } catch (JsonSyntaxException e) {
-            // JSON inválido ou mal formatado
-            enviarRespostaErro(resp, HttpServletResponse.SC_BAD_REQUEST, "Erro ao processar JSON: " + e.getMessage());
+            if (resultados.isEmpty()) {
+                enviarRespostaErro(resp, HttpServletResponse.SC_NOT_FOUND, "Nenhum endereço encontrado para o cliente com os filtros fornecidos.");
+            } else {
+                enviarRespostaSucesso(resp, "Consulta realizada com sucesso!", resultados);
+            }
+        } catch (NumberFormatException e) {
+            enviarRespostaErro(resp, HttpServletResponse.SC_BAD_REQUEST, "Erro nos parâmetros: " + e.getMessage());
         } catch (Exception e) {
-            // Outros erros inesperados
             e.printStackTrace();
             enviarRespostaErro(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Erro inesperado: " + e.getMessage());
         }

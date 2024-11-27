@@ -85,6 +85,30 @@ public class Fachada implements IFachada{
 
     @Override
     public void alterar(EntidadeDominio entidade, StringBuilder sb) {
+        try{
+            switch (entidade) {
+                case Cliente cliente -> {
+                    EncriptografaSenha criptografa = new EncriptografaSenha();
+                    processarValidacoes(cliente, getValidacoes(cliente), sb);
+                    cliente.setSenha(criptografa.processar(cliente, sb));
+                }
+                case ClienteEndereco clienteEndereco ->
+                        processarValidacoes(clienteEndereco, getValidacoes(clienteEndereco), sb);
+                case Bandeira bandeira ->
+                        processarValidacoes(bandeira, getValidacoes(bandeira), sb);
+                case Cartao cartao ->
+                        processarValidacoes(cartao, getValidacoes(cartao), sb);
+    //                    }
+    //                    case Transacao transacao -> {
+    //                    }
+    //                    case Log log -> {
+    //                    }
+                case null, default ->
+                        throw new IllegalArgumentException("Tipo de entidade não suportado: " + entidade);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override

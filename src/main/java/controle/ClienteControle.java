@@ -17,7 +17,10 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Type;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 @WebServlet(name = "ControleCliente", urlPatterns = "/controlecliente")
@@ -27,38 +30,65 @@ public class ClienteControle extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         configurarCodificacao(req, resp);
-        Gson gson = new Gson();
 
         try {
             IFachada fachada = new Fachada();
-            JsonObject jsonObject;
+            Cliente clienteFiltro = new Cliente();
 
-            try {
-                jsonObject = lerJsonComoObjeto(req); // Tenta ler o JSON do corpo
-            } catch (IllegalArgumentException e) {
-                // Se não houver JSON, tratamos como uma consulta sem filtros
-                jsonObject = null;
+            if (req.getParameter("id") != null) {
+                clienteFiltro.setId(Integer.parseInt(req.getParameter("id")));
+            }
+            if (req.getParameter("ranking") != null) {
+                clienteFiltro.setRanking(req.getParameter("ranking"));
+            }
+            if (req.getParameter("nome") != null) {
+                clienteFiltro.setNome(req.getParameter("nome"));
+            }
+            if (req.getParameter("genero") != null) {
+                clienteFiltro.setGenero(req.getParameter("genero"));
+            }
+            if (req.getParameter("cpf") != null) {
+                clienteFiltro.setCpf(req.getParameter("cpf"));
+            }
+            if (req.getParameter("tipoTelefone") != null) {
+                clienteFiltro.setTipoTelefone(req.getParameter("tipoTelefone"));
+            }
+            if (req.getParameter("telefone") != null) {
+                clienteFiltro.setTelefone(req.getParameter("telefone"));
+            }
+            if (req.getParameter("email") != null) {
+                clienteFiltro.setEmail(req.getParameter("email"));
+            }
+            if (req.getParameter("senha") != null) {
+                clienteFiltro.setSenha(req.getParameter("senha"));
+            }
+            if (req.getParameter("dataNascimento") != null) {
+                // Conversão de string para Date
+                try {
+                    String dataStr = req.getParameter("dataNascimento");
+                    Date data = new SimpleDateFormat("yyyy-MM-dd").parse(dataStr);
+                    clienteFiltro.setDataNascimento(data);
+                } catch (ParseException e) {
+                    enviarRespostaErro(resp, HttpServletResponse.SC_BAD_REQUEST, "Data de nascimento inválida: " + e.getMessage());
+                    return;
+                }
             }
 
-            // Extrai entidades se o JSON foi fornecido
-            List<EntidadeDominio> entidades = jsonObject != null ? extrairEntidades(jsonObject, gson) : new ArrayList<>();
-
-            // Consulta pelo Fachada; se nenhuma entidade for fornecida, busca todas
-            List<EntidadeDominio> resultados = fachada.consultar(entidades.isEmpty() ? new Cliente() : entidades.getFirst());
+            List<EntidadeDominio> resultados = fachada.consultar(clienteFiltro);
 
             if (resultados.isEmpty()) {
                 enviarRespostaErro(resp, HttpServletResponse.SC_NOT_FOUND, "Nenhum resultado encontrado.");
             } else {
                 enviarRespostaSucesso(resp, "Consulta realizada com sucesso!", resultados);
             }
-
-        } catch (JsonSyntaxException e) {
-            enviarRespostaErro(resp, HttpServletResponse.SC_BAD_REQUEST, "Erro ao processar JSON: " + e.getMessage());
+        } catch (NumberFormatException e) {
+            enviarRespostaErro(resp, HttpServletResponse.SC_BAD_REQUEST, "Parâmetro inválido: " + e.getMessage());
         } catch (Exception e) {
             e.printStackTrace();
             enviarRespostaErro(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Erro inesperado: " + e.getMessage());
         }
     }
+
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
@@ -84,6 +114,38 @@ public class ClienteControle extends HttpServlet {
             } catch (Exception e) {
                 e.printStackTrace();
                 enviarRespostaErro(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Erro ao salvar cliente e cliente endereco: " + e.getMessage());
+            }
+        } catch (JsonSyntaxException e) {
+            enviarRespostaErro(resp, HttpServletResponse.SC_BAD_REQUEST, "Erro ao processar JSON: " + e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            enviarRespostaErro(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Erro inesperado: " + e.getMessage());
+        }
+    }
+
+    @Override
+    protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        configurarCodificacao(req, resp);
+        Gson gson = new Gson();
+        StringBuilder erros = new StringBuilder();
+
+        try {
+            JsonObject jsonObject = lerJsonComoObjeto(req);
+
+            if (!jsonObject.has("Cliente")) {
+                enviarRespostaErro(resp, HttpServletResponse.SC_BAD_REQUEST, "JSON inválido: Campos obrigatórios ausentes.");
+                return;
+            }
+
+            List<EntidadeDominio> entidadesParaAtualizar = extrairEntidades(jsonObject, gson);
+            IFachada fachada = new Fachada();
+
+            try {
+                fachada.alterar(entidadesParaAtualizar.getFirst(), erros);
+                enviarRespostaSucesso(resp, "Cliente e/ou Cliente Endereço atualizado com sucesso!", entidadesParaAtualizar);
+            } catch (Exception e) {
+                e.printStackTrace();
+                enviarRespostaErro(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Erro ao atualizar cliente e cliente endereco: " + e.getMessage());
             }
         } catch (JsonSyntaxException e) {
             enviarRespostaErro(resp, HttpServletResponse.SC_BAD_REQUEST, "Erro ao processar JSON: " + e.getMessage());

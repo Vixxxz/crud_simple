@@ -14,10 +14,6 @@ public class Cliente extends EntidadeDominio{
     private String email;
     private String senha;
     private Date dataNascimento;
-//    private List<ClienteEndereco> enderecosRelacionados = new ArrayList<>();
-//    private transient List<Cartao> cartoes = new ArrayList<Cartao>();
-//    private transient List<Transacao> transacoes = new ArrayList<Transacao>();
-//    private transient List<Log> logs = new ArrayList<Log>();
 
 
     public Cliente() {
