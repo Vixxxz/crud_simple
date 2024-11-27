@@ -36,6 +36,6 @@ public class ValidaDadosCartao implements IStrategy {
     }
 
     private boolean isStringValida(String value) {
-        return value != null && !value.isBlank();
+        return value == null || value.isBlank();
     }
 }

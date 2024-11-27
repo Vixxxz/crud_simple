@@ -1,8 +1,5 @@
 package strategy;
 
-import dao.BandeiraDAO;
-import dao.CartaoDAO;
-import dominio.Bandeira;
 import dominio.Cartao;
 import dominio.EntidadeDominio;
 import fachada.FachadaDAO;
@@ -15,7 +12,7 @@ public class ValidaCartaoPreferencial implements IStrategy{
         Cartao cartao = new Cartao();
         cartao.setPreferencial(true);
         FachadaDAO fachadaDAO = new FachadaDAO();
-        List<EntidadeDominio> cartoes = fachadaDAO.consultar(cartao, sb);
+        List<EntidadeDominio> cartoes = fachadaDAO.consultar(cartao);
         if(!cartoes.isEmpty()){
             sb.append("Ja existe um cartao preferencial cadastrado.");
         }

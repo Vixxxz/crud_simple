@@ -29,15 +29,30 @@ public class CartaoDAO implements IDAO{
     public EntidadeDominio salvar(EntidadeDominio entidade) throws Exception {
         Cartao cartao = (Cartao) entidade;
         StringBuilder sql = new StringBuilder();
-        sql.append("INSERT INTO cartao(car_num, car_num_seguranca, car_nome_impresso, car_preferencial, ban_dt_cadastro) ");
-        sql.append("VALUES (?,?,?,?,?)");
+        sql.append("INSERT INTO cartao(car_num, car_num_seguranca, car_nome_impresso, car_preferencial, car_dt_cadastro, car_cli_id, car_ban_id) ");
+        sql.append("VALUES (?,?,?,?,?,?,?)");
         try{
             if(connection == null || connection.isClosed()) {
                 connection = Conexao.getConnectionMySQL();
             }
             connection.setAutoCommit(false);
 
-            //todo: buscar a bandeira e o cliente antes de salvar o cartao
+            ClienteDAO clienteDAO = new ClienteDAO(connection);
+            BandeiraDAO bandeiraDAO = new BandeiraDAO(connection);
+
+            List<EntidadeDominio> clientes = clienteDAO.consultar(cartao.getCliente());
+            List<EntidadeDominio> bandeiras = bandeiraDAO.consultar(cartao.getBandeira());
+
+            if(!clientes.isEmpty()){
+                cartao.setCliente((Cliente) clientes.getFirst());
+            }else{
+                throw new Exception("Cliente não cadastrado no sistema");
+            }
+            if(!bandeiras.isEmpty()){
+                cartao.setBandeira((Bandeira) bandeiras.getFirst());
+            }else{
+                throw new Exception("Bandeira não encontrada no sistema");
+            }
 
             try(PreparedStatement pst = connection.prepareStatement(sql.toString(), PreparedStatement.RETURN_GENERATED_KEYS)){
                 pst.setString(1, cartao.getNumero());
@@ -45,7 +60,8 @@ public class CartaoDAO implements IDAO{
                 pst.setString(3, cartao.getNomeImpresso());
                 pst.setBoolean(4, cartao.getPreferencial());
                 pst.setTimestamp(5, new java.sql.Timestamp(cartao.getDtCadastro().getTime()));
-
+                pst.setInt(6, cartao.getCliente().getId());
+                pst.setInt(7, cartao.getBandeira().getId());
                 pst.executeUpdate();
 
                 try(ResultSet rs = pst.getGeneratedKeys()){

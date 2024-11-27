@@ -1,6 +1,5 @@
 package strategy;
 
-import dao.BandeiraDAO;
 import dominio.Bandeira;
 import dominio.Cartao;
 import dominio.EntidadeDominio;
@@ -14,7 +13,7 @@ public class ValidaBandeiraExistente implements IStrategy{
         Cartao cartao = (Cartao) entidade;
         Bandeira bandeira = cartao.getBandeira();
         FachadaDAO fachadaDAO = new FachadaDAO();
-        List<EntidadeDominio> cartoes = fachadaDAO.consultar(bandeira, sb);
+        List<EntidadeDominio> cartoes = fachadaDAO.consultar(bandeira);
         if(cartoes.isEmpty()){
             sb.append("A bandeira deve estar cadastrada no sitema.");
         }

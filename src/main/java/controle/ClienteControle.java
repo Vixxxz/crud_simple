@@ -8,13 +8,13 @@ import dominio.EntidadeDominio;
 import fachada.Fachada;
 import fachada.IFachada;
 
-import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -25,8 +25,39 @@ public class ClienteControle extends HttpServlet {
     private static final long serialVersionUID = 1L;
 
     @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        System.out.println("GET feito em /controlecliente");
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        configurarCodificacao(req, resp);
+        Gson gson = new Gson();
+
+        try {
+            IFachada fachada = new Fachada();
+            JsonObject jsonObject;
+
+            try {
+                jsonObject = lerJsonComoObjeto(req); // Tenta ler o JSON do corpo
+            } catch (IllegalArgumentException e) {
+                // Se não houver JSON, tratamos como uma consulta sem filtros
+                jsonObject = null;
+            }
+
+            // Extrai entidades se o JSON foi fornecido
+            List<EntidadeDominio> entidades = jsonObject != null ? extrairEntidades(jsonObject, gson) : new ArrayList<>();
+
+            // Consulta pelo Fachada; se nenhuma entidade for fornecida, busca todas
+            List<EntidadeDominio> resultados = fachada.consultar(entidades.isEmpty() ? new Cliente() : entidades.getFirst());
+
+            if (resultados.isEmpty()) {
+                enviarRespostaErro(resp, HttpServletResponse.SC_NOT_FOUND, "Nenhum resultado encontrado.");
+            } else {
+                enviarRespostaSucesso(resp, "Consulta realizada com sucesso!", resultados);
+            }
+
+        } catch (JsonSyntaxException e) {
+            enviarRespostaErro(resp, HttpServletResponse.SC_BAD_REQUEST, "Erro ao processar JSON: " + e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            enviarRespostaErro(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Erro inesperado: " + e.getMessage());
+        }
     }
 
     @Override
@@ -37,6 +68,8 @@ public class ClienteControle extends HttpServlet {
 
         try {
             JsonObject jsonObject = lerJsonComoObjeto(req);
+
+            // Valida a presença de campos obrigatórios no JSON
             if (!jsonObject.has("Cliente") || !jsonObject.has("ClienteEndereco")) {
                 enviarRespostaErro(resp, HttpServletResponse.SC_BAD_REQUEST, "JSON inválido: Campos obrigatórios ausentes.");
                 return;
@@ -47,7 +80,7 @@ public class ClienteControle extends HttpServlet {
 
             try {
                 fachada.salvar(entidadesParaSalvar, erros);
-                enviarRespostaSucesso(resp, entidadesParaSalvar);
+                enviarRespostaSucesso(resp, "Cliente e Cliente Endereço salvo com sucesso!", entidadesParaSalvar);
             } catch (Exception e) {
                 e.printStackTrace();
                 enviarRespostaErro(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Erro ao salvar cliente e cliente endereco: " + e.getMessage());
@@ -62,6 +95,9 @@ public class ClienteControle extends HttpServlet {
 
     private JsonObject lerJsonComoObjeto(HttpServletRequest req) throws IOException {
         String json = lerJsonComoString(req);
+        if (json.isBlank()) {
+            throw new IllegalArgumentException("Nenhum JSON foi fornecido na requisição.");
+        }
         return JsonParser.parseString(json).getAsJsonObject();
     }
 
@@ -83,35 +119,29 @@ public class ClienteControle extends HttpServlet {
     }
 
     private List<EntidadeDominio> extrairEntidades(JsonObject jsonObject, Gson gson) {
-        List<EntidadeDominio> entidadesParaSalvar = new ArrayList<>();
-
-        // Extrai a informação do campo "Cliente" do JSON e converte para um objeto do tipo Cliente.
-        // gson.fromJson: converte JSON para um objeto Java. Aqui, é passado o JSON do campo "Cliente".
-        Cliente cliente = gson.fromJson(jsonObject.get("Cliente"), Cliente.class);
-
-        entidadesParaSalvar.add(cliente);
-
-        // Define o tipo genérico que será usado para interpretar uma lista de objetos do tipo ClienteEndereco.
-        // TypeToken é necessário para capturar tipos genéricos, como List<ClienteEndereco>, durante a desserialização.
-        Type clienteEnderecoListType = new TypeToken<List<ClienteEndereco>>() {}.getType();
-
-        // Extrai a informação do campo "ClienteEndereco" do JSON e converte para uma lista de objetos do tipo ClienteEndereco.
-        // gson.fromJson: neste caso, o metodo utiliza o tipo definido (clienteEnderecoListType) para interpretar corretamente o JSON.
-        List<ClienteEndereco> clienteEnderecos = gson.fromJson(jsonObject.get("ClienteEndereco"), clienteEnderecoListType);
-
-        // Adiciona todos os objetos da lista ClienteEndereco na lista de entidades.
-        entidadesParaSalvar.addAll(clienteEnderecos);
-
-        return entidadesParaSalvar;
+        List<EntidadeDominio> entidades = new ArrayList<>();
+        if (jsonObject.has("Cliente")) {
+            Cliente cliente = gson.fromJson(jsonObject.get("Cliente"), Cliente.class);
+            entidades.add(cliente);
+        }
+        if (jsonObject.has("ClienteEndereco")) {
+            Type clienteEnderecoListType = new TypeToken<List<ClienteEndereco>>() {}.getType();
+            List<ClienteEndereco> clienteEnderecos = gson.fromJson(jsonObject.get("ClienteEndereco"), clienteEnderecoListType);
+            entidades.addAll(clienteEnderecos);
+        }
+        return entidades;
     }
 
-
-    private void enviarRespostaSucesso(HttpServletResponse resp, Object dados) throws IOException {
+    private void enviarRespostaSucesso(HttpServletResponse resp, String mensagem, Object dados) throws IOException {
         resp.setStatus(HttpServletResponse.SC_OK);
+
         JsonObject resposta = new JsonObject();
-        resposta.addProperty("mensagem", "Cliente e Cliente Endereço salvo com sucesso!");
+        resposta.addProperty("mensagem", mensagem);
         resposta.add("dados", new Gson().toJsonTree(dados));
-        resp.getWriter().write(resposta.toString());
+
+        try (PrintWriter writer = resp.getWriter()) {
+            writer.write(resposta.toString());
+        }
     }
 
     private void enviarRespostaErroValidacao(HttpServletResponse resp, String errosDeValidacao) throws IOException {

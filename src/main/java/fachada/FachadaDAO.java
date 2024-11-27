@@ -69,10 +69,10 @@ public class FachadaDAO implements IFachada {
 
         if (cartoesSalvos.isEmpty()) {
             Cartao cartaoSalvo = (Cartao) cartaoDAO.salvar(cartao);
-            logger.log(Level.INFO, "Cartão salvo: " + cartaoSalvo.getNumeroCartao());
+            logger.log(Level.INFO, "Cartão salvo: " + cartaoSalvo.getNumero());
             entidadesSalvas.add(cartaoSalvo);
         } else {
-            throw new Exception("Cartão já existente: " + cartao.getNumeroCartao());
+            throw new Exception("Cartão já existente: " + cartao.getNumero());
         }
     }
 
@@ -128,7 +128,7 @@ public class FachadaDAO implements IFachada {
 
     }
 
-    public List<EntidadeDominio> consultar(EntidadeDominio entidade, StringBuilder sb) throws Exception {
+    public List<EntidadeDominio> consultar(EntidadeDominio entidade) throws Exception {
         try{
             if(connection == null || connection.isClosed()){
                 connection = Conexao.getConnectionMySQL();
