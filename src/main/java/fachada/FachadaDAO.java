@@ -202,6 +202,12 @@ public class FachadaDAO implements IFachada {
             }
             return entidadesSalvas;
         }catch (Exception e){
+            try {
+                connection.rollback();
+                logger.log(Level.INFO, "Rollback realizado");
+            } catch (SQLException rollbackEx) {
+                logger.log(Level.SEVERE, "Erro ao tentar realizar o rollback " + rollbackEx.getMessage(), rollbackEx);
+            }
             logger.log(Level.SEVERE, e.getMessage() + " " + entidade, e);
             throw new Exception(e.getMessage() + " " + entidade, e);
         }finally {

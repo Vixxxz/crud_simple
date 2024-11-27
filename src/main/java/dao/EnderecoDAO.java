@@ -107,8 +107,93 @@ public class EnderecoDAO implements IDAO{
     }
 
     @Override
-    public void alterar(EntidadeDominio entidade) {
+    public EntidadeDominio alterar(EntidadeDominio entidade) throws Exception {
+        Endereco endereco = (Endereco) entidade;
+        StringBuilder sqlUpdateEndereco = new StringBuilder();
 
+        sqlUpdateEndereco.append("UPDATE endereco SET end_cep = ?, end_bai_id = ?, end_lgr_id = ?, end_dt_cadastro = ? ");
+        sqlUpdateEndereco.append("WHERE end_id = ?");
+
+        try {
+            if (connection == null || connection.isClosed()) {
+                connection = Conexao.getConnectionMySQL();
+            }
+            connection.setAutoCommit(false);
+
+            List<EntidadeDominio> entidades;
+
+            if (endereco.getLogradouro() != null) {
+                IDAO logradouroDAO = new LogradouroDAO(connection);
+                entidades = logradouroDAO.consultar(endereco.getLogradouro());
+                if (entidades.isEmpty()) {
+                    endereco.setLogradouro(atualizaLogradouro(endereco, logradouroDAO));
+                    logger.log(Level.INFO, "logradouro atualizado: " + endereco.getLogradouro().getLogradouro());
+                } else {
+                    endereco.setLogradouro((Logradouro) entidades.getFirst());
+                }
+            }
+
+            endereco.complementarDtCadastro();
+
+            if (endereco.getBairro() != null) {
+                IDAO bairroDAO = new BairroDAO(connection);
+                entidades = bairroDAO.consultar(endereco.getBairro());
+                if (entidades.isEmpty()) {
+                    endereco.setBairro(atualizaBairro(endereco, bairroDAO));
+                    logger.log(Level.INFO, "bairro atualizado: " + endereco.getBairro().getBairro());
+                } else {
+                    endereco.setBairro((Bairro) entidades.getFirst());
+                }
+            }
+            endereco.complementarDtCadastro();
+            logger.log(Level.INFO, "Atualizando endereço com ID: " + endereco.getId());
+            try (PreparedStatement pst = connection.prepareStatement(sqlUpdateEndereco.toString())) {
+                pst.setString(1, endereco.getCep());
+                pst.setInt(2, endereco.getBairro().getId());
+                pst.setInt(3, endereco.getLogradouro().getId());
+                pst.setTimestamp(4, new Timestamp(endereco.getDtCadastro().getTime()));
+                pst.setInt(5, endereco.getId());
+
+                int rowsUpdated = pst.executeUpdate();
+                if (rowsUpdated == 0) {
+                    throw new Exception("Nenhum endereço encontrado para o ID " + endereco.getId());
+                }
+            }
+
+            connection.commit();
+            return endereco;
+
+        } catch (SQLException e) {
+            throw new Exception("Erro ao atualizar endereco: " + e.getMessage(), e);
+        }
+    }
+
+    private Bairro atualizaBairro(Endereco endereco, IDAO bairroDAO) throws Exception {
+        try {
+            Bairro bairro = (Bairro) bairroDAO.alterar(endereco.getBairro());
+            if (bairro != null) {
+                return bairro;
+            } else {
+                throw new Exception("Falha ao atualizar o bairro: o logradouro retornado é nulo.");
+            }
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Erro ao atualizar o bairro: " + e.getMessage(),e);
+            throw new Exception("Erro ao atualizar o bairro: " + e.getMessage(), e);
+        }
+    }
+
+    private Logradouro atualizaLogradouro(Endereco endereco, IDAO logradouroDAO) throws Exception {
+        try {
+            Logradouro logradouro = (Logradouro) logradouroDAO.alterar(endereco.getLogradouro());
+            if (logradouro != null) {
+                return logradouro;
+            } else {
+                throw new Exception("Falha ao atualizar o logradouro: o logradouro retornado é nulo.");
+            }
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Erro ao atualizar o logradouro: " + e.getMessage(),e);
+            throw new Exception("Erro ao atualizar o logradouro: " + e.getMessage(), e);
+        }
     }
 
     @Override

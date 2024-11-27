@@ -66,6 +66,38 @@ public class ClienteEnderecoControle extends HttpServlet {
         }
     }
 
+    @Override
+    protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        configurarCodificacao(req, resp);
+        Gson gson = new Gson();
+        StringBuilder erros = new StringBuilder();
+
+        try {
+            JsonObject jsonObject = lerJsonComoObjeto(req);
+
+            if (!jsonObject.has("ClienteEndereco")) {
+                enviarRespostaErro(resp, HttpServletResponse.SC_BAD_REQUEST, "JSON inválido: Campos obrigatórios ausentes.");
+                return;
+            }
+
+            List<EntidadeDominio> entidadesParaAtualizar = extrairEntidades(jsonObject, gson);
+            IFachada fachada = new Fachada();
+
+            try {
+                fachada.alterar(entidadesParaAtualizar.getFirst(), erros);
+                enviarRespostaSucesso(resp, "Endereco atualizado com sucesso!", entidadesParaAtualizar);
+            } catch (Exception e) {
+                e.printStackTrace();
+                enviarRespostaErro(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Erro ao atualizar Endereco: " + e.getMessage());
+            }
+        } catch (JsonSyntaxException e) {
+            enviarRespostaErro(resp, HttpServletResponse.SC_BAD_REQUEST, "Erro ao processar JSON: " + e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            enviarRespostaErro(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Erro inesperado: " + e.getMessage());
+        }
+    }
+
     private JsonObject lerJsonComoObjeto(HttpServletRequest req) throws IOException {
         String json = lerJsonComoString(req);
         return JsonParser.parseString(json).getAsJsonObject();
@@ -90,10 +122,8 @@ public class ClienteEnderecoControle extends HttpServlet {
 
     private List<EntidadeDominio> extrairEntidades(JsonObject jsonObject, Gson gson) {
         List<EntidadeDominio> entidades = new ArrayList<>();
-        if(jsonObject.has("Cliente")){
-            Cliente cli = gson.fromJson(jsonObject.get("Cliente"), Cliente.class);
-            ClienteEndereco cliEnd = new ClienteEndereco();
-            cliEnd.setCliente(cli);
+        if(jsonObject.has("ClienteEndereco")){
+            ClienteEndereco cliEnd = gson.fromJson(jsonObject.get("ClienteEndereco"), ClienteEndereco.class);
             entidades.add(cliEnd);
         }
         return entidades;

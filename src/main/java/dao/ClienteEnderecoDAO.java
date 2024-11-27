@@ -84,9 +84,84 @@ public class ClienteEnderecoDAO implements IDAO{
     }
 
     @Override
-    public void alterar(EntidadeDominio entidade) {
+    public EntidadeDominio alterar(EntidadeDominio entidade) throws Exception {
+        ClienteEndereco clienteEndereco = (ClienteEndereco) entidade;
 
+        StringBuilder sql = new StringBuilder();
+        sql.append("UPDATE cliente_endereco SET ");
+        sql.append("cli_end_num = ?, ");
+        sql.append("cli_end_tp_residencia = ?, ");
+        sql.append("cli_end_tp_end = ?, ");
+        sql.append("cli_end_obs = ?, ");
+        sql.append("cli_end_dt_cadastro = ?, "); // Correção: adição da vírgula aqui
+        sql.append("cli_end_cli_id = ?, ");
+        sql.append("cli_end_end_id = ? ");
+        sql.append("WHERE cli_end_id = ?");
+
+        try {
+            if (connection == null || connection.isClosed()) {
+                connection = Conexao.getConnectionMySQL();
+            }
+            connection.setAutoCommit(false);
+
+            ClienteDAO clienteDAO = new ClienteDAO(connection);
+            List<EntidadeDominio> entidades = clienteDAO.consultar(clienteEndereco.getCliente());
+
+            if (entidades.isEmpty()) {
+                throw new Exception("Cliente não encontrado");
+            } else {
+                clienteEndereco.setCliente((Cliente) entidades.get(0)); // Corrigido para usar `get(0)`
+            }
+
+            if (clienteEndereco.getEndereco() != null) {
+                IDAO enderecoDAO = new EnderecoDAO(connection);
+                entidades = enderecoDAO.consultar(clienteEndereco.getEndereco());
+                if (entidades.isEmpty()) {
+                    clienteEndereco.setEndereco(atualizaEndereco(clienteEndereco, enderecoDAO));
+                    logger.log(Level.INFO, "Endereço atualizado para ClienteEndereco: " + clienteEndereco.getEndereco().getCep());
+                } else {
+                    clienteEndereco.setEndereco((Endereco) entidades.get(0));
+                }
+            }
+
+            clienteEndereco.complementarDtCadastro();
+            try (PreparedStatement pst = connection.prepareStatement(sql.toString())) {
+                pst.setString(1, clienteEndereco.getNumero());
+                pst.setString(2, clienteEndereco.getTipoResidencia());
+                pst.setString(3, clienteEndereco.getTipoEndereco());
+                pst.setString(4, clienteEndereco.getObservacoes());
+                pst.setTimestamp(5, new Timestamp(clienteEndereco.getDtCadastro().getTime()));
+                pst.setInt(6, clienteEndereco.getCliente().getId());
+                pst.setInt(7, clienteEndereco.getEndereco().getId());
+                pst.setInt(8, clienteEndereco.getId());
+
+                int rowsUpdated = pst.executeUpdate();
+                if (rowsUpdated == 0) {
+                    throw new Exception("Nenhum registro encontrado para o ClienteEndereco com ID: " + clienteEndereco.getId());
+                }
+            }
+
+            connection.commit();
+            return clienteEndereco;
+        } catch (SQLException e) {
+            throw new Exception("Erro ao atualizar ClienteEndereco: " + e.getMessage(), e);
+        }
     }
+
+    private Endereco atualizaEndereco(ClienteEndereco clienteEndereco, IDAO enderecoDAO) throws Exception {
+        try {
+            Endereco endereco = (Endereco) enderecoDAO.alterar(clienteEndereco.getEndereco());
+            if (endereco != null) {
+                return endereco;
+            } else {
+                throw new Exception("Falha ao alterar o endereço: o endereço retornado é nulo.");
+            }
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Erro ao alterar endereco: " + e.getMessage(), e);
+            throw new Exception("Erro ao alterar o endereço: " + e.getMessage(), e);
+        }
+    }
+
 
     @Override
     public void excluir(EntidadeDominio entidade) {

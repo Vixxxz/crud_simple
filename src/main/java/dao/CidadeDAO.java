@@ -87,8 +87,66 @@ public class CidadeDAO implements IDAO{
     }
 
     @Override
-    public void alterar(EntidadeDominio entidade) {
+    public EntidadeDominio alterar(EntidadeDominio entidade) throws Exception {
+        Cidade cidade = (Cidade) entidade;
+        StringBuilder sqlUpdateCidade = new StringBuilder();
+        sqlUpdateCidade.append("UPDATE cidade SET cid_cidade = ?, cid_uf_id = ?, cid_dt_cadastro = ? ")
+                .append("WHERE cid_id = ?");
 
+        try {
+            if (connection == null || connection.isClosed()) {
+                connection = Conexao.getConnectionMySQL();
+            }
+            connection.setAutoCommit(false);
+
+            List<EntidadeDominio> entidades;
+
+            if (cidade.getUf() != null) {
+                IDAO ufDAO = new UfDAO(connection);
+                entidades = ufDAO.consultar(cidade.getUf());
+                if (entidades.isEmpty()) {
+                    cidade.setUf(atualizaUf(cidade, ufDAO));
+                    logger.log(Level.INFO, "Uf atualizado");
+                } else {
+                    cidade.setUf((Uf) entidades.getFirst());
+                }
+            }
+
+            cidade.complementarDtCadastro();
+
+            logger.log(Level.INFO, "Atualizando cidade com ID: " + cidade.getId());
+            try (PreparedStatement pst = connection.prepareStatement(sqlUpdateCidade.toString())) {
+                pst.setString(1, cidade.getCidade());
+                pst.setInt(2, cidade.getUf().getId());
+                pst.setTimestamp(3, new Timestamp(cidade.getDtCadastro().getTime()));
+                pst.setInt(4, cidade.getId());
+
+                int rowsUpdated = pst.executeUpdate();
+                if (rowsUpdated == 0) {
+                    throw new Exception("Nenhuma cidade encontrada para o ID " + cidade.getId());
+                }
+            }
+
+            connection.commit();
+            return cidade;
+
+        } catch (SQLException e) {
+            throw new Exception("Erro ao atualizar cidade: " + e.getMessage(), e);
+        }
+    }
+
+    private Uf atualizaUf(Cidade cidade, IDAO ufDAO) throws Exception {
+        try{
+            Uf uf = (Uf) ufDAO.alterar(cidade.getUf());
+            if(uf!= null){
+                return uf;
+            } else {
+                throw new Exception("Falha ao alterar a UF: a UF retornada é nula.");
+            }
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Erro ao alterar UF: " + e.getMessage()+ e);
+            throw new Exception("Erro ao alterar a UF: " + e.getMessage(), e);
+        }
     }
 
     @Override

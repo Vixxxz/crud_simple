@@ -80,9 +80,66 @@ public class BairroDAO implements IDAO{
     }
 
     @Override
-    public void alterar(EntidadeDominio entidade) {
+    public EntidadeDominio alterar(EntidadeDominio entidade) throws Exception {
+        Bairro bairro = (Bairro) entidade;
+        StringBuilder sqlUpdateBairro = new StringBuilder();
+        sqlUpdateBairro.append("UPDATE bairro SET bai_bairro = ?, bai_cid_id = ?, bai_dt_cadastro = ? ")
+                .append("WHERE bai_id = ?");
 
+        try {
+            if (connection == null || connection.isClosed()) {
+                connection = Conexao.getConnectionMySQL();
+            }
+            connection.setAutoCommit(false);
+
+            List<EntidadeDominio> entidades;
+
+            if (bairro.getCidade() != null) {
+                IDAO cidadeDAO = new CidadeDAO(connection);
+                entidades = cidadeDAO.consultar(bairro.getCidade());
+                if (entidades.isEmpty()) {
+                    bairro.setCidade(atualizaCidade(bairro, cidadeDAO));
+                    logger.log(Level.INFO, "cidade atualizado");
+                } else {
+                    bairro.setCidade((Cidade) entidades.getFirst());
+                }
+            }
+            bairro.complementarDtCadastro();
+            logger.log(Level.INFO, "Atualizando bairro com ID: " + bairro.getId());
+            try (PreparedStatement pst = connection.prepareStatement(sqlUpdateBairro.toString())) {
+                pst.setString(1, bairro.getBairro());
+                pst.setInt(2, bairro.getCidade().getId());
+                pst.setTimestamp(3, new Timestamp(bairro.getDtCadastro().getTime()));
+                pst.setInt(4, bairro.getId());
+
+                int rowsUpdated = pst.executeUpdate();
+                if (rowsUpdated == 0) {
+                    throw new Exception("Nenhum bairro encontrado para o ID " + bairro.getId());
+                }
+            }
+
+            connection.commit();
+            return bairro;
+
+        } catch (SQLException e) {
+            throw new Exception("Erro ao atualizar bairro: " + e.getMessage(), e);
+        }
     }
+
+    private Cidade atualizaCidade(Bairro bairro, IDAO cidadeDAO) throws Exception {
+        try {
+            Cidade cidade = (Cidade) cidadeDAO.alterar(bairro.getCidade());
+            if (cidade != null) {
+                return cidade;
+            } else {
+                throw new Exception("Falha ao alterar a cidade: a cidade retornada é nula.");
+            }
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Erro ao alterar cidade: " + e.getMessage(), e);
+            throw new Exception("Erro ao alterar a cidade." + e.getMessage(), e);
+        }
+    }
+
 
     @Override
     public void excluir(EntidadeDominio entidade) {

@@ -63,7 +63,7 @@ public class ClienteDAO implements IDAO{
     }
 
     @Override
-    public void alterar(EntidadeDominio entidade) throws Exception {
+    public EntidadeDominio alterar(EntidadeDominio entidade) throws Exception {
         Cliente cliente = (Cliente) entidade;
         try {
             if (connection == null) {
@@ -101,6 +101,7 @@ public class ClienteDAO implements IDAO{
 
             connection.commit();
             logger.log(Level.INFO, "Cliente atualizado com sucesso. ID: " + cliente.getId());
+            return cliente;
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Erro ao atualizar cliente: " + e.getMessage(), e);
             if (connection != null) {

@@ -55,9 +55,40 @@ public class PaisDAO implements IDAO{
     }
 
     @Override
-    public void alterar(EntidadeDominio entidade) {
+    public EntidadeDominio alterar(EntidadeDominio entidade) throws Exception {
+        Pais pais = (Pais) entidade;
+        StringBuilder sqlUpdatePais = new StringBuilder();
+        sqlUpdatePais.append("UPDATE pais SET pai_pais = ?, pai_dt_cadastro = ? ")
+                .append("WHERE pai_id = ?");
 
+        try {
+            if (connection == null || connection.isClosed()) {
+                connection = Conexao.getConnectionMySQL();
+            }
+            connection.setAutoCommit(false);
+
+            pais.complementarDtCadastro(); // Atualiza a data de cadastro
+
+            logger.log(Level.INFO, "Atualizando país com ID: " + pais.getId());
+            try (PreparedStatement pst = connection.prepareStatement(sqlUpdatePais.toString())) {
+                pst.setString(1, pais.getPais());
+                pst.setTimestamp(2, new Timestamp(pais.getDtCadastro().getTime()));
+                pst.setInt(3, pais.getId());
+
+                int rowsUpdated = pst.executeUpdate();
+                if (rowsUpdated == 0) {
+                    throw new Exception("Nenhum país encontrado para o ID " + pais.getId());
+                }
+            }
+
+            connection.commit();
+            return pais;
+
+        } catch (SQLException e) {
+            throw new Exception("Erro ao atualizar pais: " + e.getMessage(), e);
+        }
     }
+
 
     @Override
     public void excluir(EntidadeDominio entidade) {
@@ -67,40 +98,38 @@ public class PaisDAO implements IDAO{
     @Override
     public List<EntidadeDominio> consultar(EntidadeDominio entidade) throws Exception {
         Pais pais = (Pais) entidade;
-        try{
-            List<EntidadeDominio> paises = new ArrayList<>();
-            List<Object> parametros = new ArrayList<>();
+        List<EntidadeDominio> paises = new ArrayList<>();
+        List<Object> parametros = new ArrayList<>();
 
-            StringBuilder sql = new StringBuilder();
-            sql.append("select * from crud_v2.pais p");
-            sql.append("where 1=1 ");
+        StringBuilder sql = new StringBuilder();
+        sql.append("select * from crud_v2.pais p ");
+        sql.append("where 1=1 ");
 
-            if(pais.getId() != null){
-                sql.append(" and p.pai_id = ? ");
-                parametros.add(pais.getId());
+        if (pais.getId() != null) {
+            sql.append(" and p.pai_id = ? ");
+            parametros.add(pais.getId());
+        }
+        if (isStringValida(pais.getPais())) {
+            sql.append(" and p.pai_pais = ? ");
+            parametros.add(pais.getPais());
+        }
+
+        try (PreparedStatement pst = connection.prepareStatement(sql.toString())) {
+            for (int i = 0; i < parametros.size(); i++) {
+                pst.setObject(i + 1, parametros.get(i));
             }
-            if(isStringValida(pais.getPais())){
-                sql.append(" and p.pai_pais = ? ");
-                parametros.add(pais.getPais());
-            }
-
-            try(PreparedStatement pst = connection.prepareStatement(sql.toString())){
-                for (int i = 0; i< parametros.size(); i++){
-                    pst.setObject(i+1, parametros.get(i));
-                }
-                try(ResultSet rs = pst.executeQuery()){
-                    while(rs.next()){
-                        Pais p = new Pais();
-                        p.setId(rs.getInt("pai_id"));
-                        p.setPais(rs.getString("pai_pais"));
-                        paises.add(p);
-                    }
+            try (ResultSet rs = pst.executeQuery()) {
+                while (rs.next()) {
+                    Pais p = new Pais();
+                    p.setId(rs.getInt("pai_id"));
+                    p.setPais(rs.getString("pai_pais"));
+                    paises.add(p);
                 }
             }
-            return paises;
-        } catch (Exception e) {
+        } catch (SQLException e) {
             throw new Exception("Erro ao consultar pais: " + e.getMessage(), e);
         }
+        return paises;
     }
 
     private boolean isStringValida(String value) {

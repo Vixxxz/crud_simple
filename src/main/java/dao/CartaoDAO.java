@@ -84,7 +84,7 @@ public class CartaoDAO implements IDAO{
     }
 
     @Override
-    public void alterar(EntidadeDominio entidade) throws Exception {
+    public EntidadeDominio alterar(EntidadeDominio entidade) throws Exception {
         Cartao cartao = (Cartao) entidade;
         StringBuilder sql = new StringBuilder();
         sql.append("UPDATE cartao SET ")
@@ -127,6 +127,7 @@ public class CartaoDAO implements IDAO{
                 }
             }
             connection.commit();
+            return cartao;
         }catch (Exception e) {
             logger.log(Level.SEVERE, "Erro ao atualizar cartao: " + e.getMessage(), e);
             if (connection != null) {

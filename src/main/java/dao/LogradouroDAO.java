@@ -81,8 +81,67 @@ public class LogradouroDAO implements IDAO{
     }
 
     @Override
-    public void alterar(EntidadeDominio entidade) {
+    public EntidadeDominio alterar(EntidadeDominio entidade) throws Exception {
+        Logradouro logradouro = (Logradouro) entidade;
+        StringBuilder sqlUpdateLogradouro = new StringBuilder();
 
+        sqlUpdateLogradouro.append("UPDATE logradouro SET lgr_logradouro = ?, lgr_tpl_id = ?, lgr_dt_cadastro = ? ");
+        sqlUpdateLogradouro.append("WHERE lgr_id = ?");
+
+        try {
+            if (connection == null || connection.isClosed()) {
+                connection = Conexao.getConnectionMySQL();
+            }
+            connection.setAutoCommit(false);
+
+            List<EntidadeDominio> entidades;
+
+            if (logradouro.getTpLogradouro() != null) {
+                IDAO tplDAO = new TipoLogradouroDAO(connection);
+                entidades = tplDAO.consultar(logradouro.getTpLogradouro());
+                if (entidades.isEmpty()) {
+                    logradouro.setTpLogradouro(atualizaTipoLogradouro(logradouro, tplDAO));
+                    logger.log(Level.INFO, "tipo logradouro atualizado: " + logradouro.getTpLogradouro().getTpLogradouro());
+                } else {
+                    logradouro.setTpLogradouro((TipoLogradouro) entidades.getFirst());
+                }
+            }
+
+            logradouro.complementarDtCadastro();
+
+            logger.log(Level.INFO, "Atualizando logradouro com ID: " + logradouro.getId());
+            try (PreparedStatement pst = connection.prepareStatement(sqlUpdateLogradouro.toString())) {
+                pst.setString(1, logradouro.getLogradouro());
+                pst.setInt(2, logradouro.getTpLogradouro().getId());
+                pst.setTimestamp(3, new Timestamp(logradouro.getDtCadastro().getTime()));
+                pst.setInt(4, logradouro.getId());
+
+                int rowsUpdated = pst.executeUpdate();
+                if (rowsUpdated == 0) {
+                    throw new Exception("Nenhum logradouro encontrado para o ID " + logradouro.getId());
+                }
+            }
+
+            connection.commit();
+            return logradouro;
+
+        } catch (SQLException e) {
+            throw new Exception("Erro ao atualizar logradouro: " + e.getMessage(), e);
+        }
+    }
+
+    private TipoLogradouro atualizaTipoLogradouro(Logradouro logradouro, IDAO tplDAO) throws Exception {
+        try {
+            TipoLogradouro tpLogradouro = (TipoLogradouro) tplDAO.alterar(logradouro.getTpLogradouro());
+            if (tpLogradouro != null) {
+                return tpLogradouro;
+            } else {
+                throw new Exception("Falha ao atualizar o tipo logradouro: o tipo logradouro retornado é nulo.");
+            }
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Erro ao atualizar tipo logradouro: " + e.getMessage(),e);
+            throw new Exception("Erro ao atualizar o tipo logradouro logradouro: " + e.getMessage(), e);
+        }
     }
 
     @Override

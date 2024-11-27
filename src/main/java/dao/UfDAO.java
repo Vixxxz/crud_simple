@@ -82,8 +82,65 @@ public class UfDAO implements IDAO{
     }
 
     @Override
-    public void alterar(EntidadeDominio entidade) {
+    public EntidadeDominio alterar(EntidadeDominio entidade) throws Exception {
+        Uf uf = (Uf) entidade;
+        StringBuilder sqlUpdateUf = new StringBuilder();
+        sqlUpdateUf.append("UPDATE uf SET uf_uf = ?, pai_pai_id = ?, uf_dt_cadastro = ? ")
+                .append("WHERE uf_id = ?");
 
+        try {
+            if (connection == null || connection.isClosed()) {
+                connection = Conexao.getConnectionMySQL();
+            }
+            connection.setAutoCommit(false);
+
+            List<EntidadeDominio> entidades;
+
+            if (uf.getPais() != null) {
+                IDAO paisDAO = new PaisDAO(connection);
+                entidades = paisDAO.consultar(uf.getPais());
+                if (entidades.isEmpty()) {
+                    uf.setPais(atualizaPais(uf, paisDAO));
+                    logger.log(Level.INFO, "pais atualizado");
+                } else {
+                    uf.setPais((Pais) entidades.getFirst());
+                }
+            }
+
+            uf.complementarDtCadastro(); // Atualiza a data de cadastro
+            logger.log(Level.INFO, "Atualizando UF com ID: " + uf.getId());
+            try (PreparedStatement pst = connection.prepareStatement(sqlUpdateUf.toString())) {
+                pst.setString(1, uf.getUf());
+                pst.setInt(2, uf.getPais().getId());
+                pst.setTimestamp(3, new Timestamp(uf.getDtCadastro().getTime()));
+                pst.setInt(4, uf.getId());
+
+                int rowsUpdated = pst.executeUpdate();
+                if (rowsUpdated == 0) {
+                    throw new Exception("Nenhuma UF encontrada para o ID " + uf.getId());
+                }
+            }
+
+            connection.commit();
+            return uf;
+
+        } catch (SQLException e) {
+            throw new Exception("Erro ao atualizar uf: " + e.getMessage(), e);
+        }
+    }
+
+    private Pais atualizaPais(Uf uf, IDAO paisDAO) throws Exception {
+        try{
+            Pais pais = (Pais) paisDAO.alterar(uf.getPais());
+            if(pais!= null){
+                return pais;
+            } else {
+                throw new Exception("Falha ao alterar o pais: o pais retornado é nulo.");
+            }
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Erro ao alterar o pais: " + e);
+            throw new Exception("Erro ao alterar o pais: " + e.getMessage(), e);
+        }
     }
 
     @Override

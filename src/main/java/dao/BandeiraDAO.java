@@ -60,7 +60,7 @@ public class BandeiraDAO implements IDAO{
     }
 
     @Override
-    public void alterar(EntidadeDominio entidade) throws Exception {
+    public EntidadeDominio alterar(EntidadeDominio entidade) throws Exception {
         Bandeira bandeira = (Bandeira) entidade;
         try{
             if (connection == null) {
@@ -84,6 +84,7 @@ public class BandeiraDAO implements IDAO{
                 }
             }
             connection.commit();
+            return bandeira;
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Erro ao atualizar bandeira: " + e.getMessage(), e);
             if (connection != null) {

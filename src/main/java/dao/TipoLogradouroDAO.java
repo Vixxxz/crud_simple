@@ -55,8 +55,38 @@ public class TipoLogradouroDAO implements IDAO{
     }
 
     @Override
-    public void alterar(EntidadeDominio entidade) {
+    public EntidadeDominio alterar(EntidadeDominio entidade) throws Exception {
+        TipoLogradouro tpl = (TipoLogradouro) entidade;
+        StringBuilder sql = new StringBuilder();
 
+        sql.append("UPDATE crud_v2.tipo_logradouro SET ");
+        sql.append("tpl_tipo = ?, tpl_dt_cadastro = ? ");
+        sql.append("WHERE tpl_id = ?");
+
+        try{
+            if(connection == null || connection.isClosed()){
+                connection = Conexao.getConnectionMySQL();
+            }
+            connection.setAutoCommit(false);
+
+            tpl.complementarDtCadastro();
+
+            logger.log(Level.INFO, "alterando tipo logradouro: " + tpl.getTpLogradouro());
+            try(PreparedStatement pst = connection.prepareStatement(sql.toString())){
+                pst.setString(1, tpl.getTpLogradouro());
+                pst.setTimestamp(2, new Timestamp(tpl.getDtCadastro().getTime()));
+                pst.setInt(3, tpl.getId());
+
+                int rowsUpdated = pst.executeUpdate();
+                if (rowsUpdated == 0) {
+                    throw new Exception("Nenhum tipo logradouro encontrado para o ID " + tpl.getId());
+                }
+            }
+            connection.commit();
+            return tpl;
+        }catch (SQLException e) {
+            throw new Exception("Erro ao atualizar tipo logradouro: " + e.getMessage(), e);
+        }
     }
 
     @Override
