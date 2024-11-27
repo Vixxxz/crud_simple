@@ -108,6 +108,37 @@ public class CartaoControle extends HttpServlet {
         }
     }
 
+    protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        configurarCodificacao(req, resp);
+        Gson gson = new Gson();
+        StringBuilder erros = new StringBuilder();
+
+        try {
+            JsonObject jsonObject = lerJsonComoObjeto(req);
+
+            if (!jsonObject.has("Cartao")) {
+                enviarRespostaErro(resp, HttpServletResponse.SC_BAD_REQUEST, "JSON inválido: Campos obrigatórios ausentes.");
+                return;
+            }
+
+            List<EntidadeDominio> entidadesParaAtualizar = extrairEntidades(jsonObject, gson);
+            IFachada fachada = new Fachada();
+
+            try {
+                fachada.alterar(entidadesParaAtualizar.getFirst(), erros);
+                enviarRespostaSucesso(resp, "Bandeira atualizado com sucesso!", entidadesParaAtualizar);
+            } catch (Exception e) {
+                e.printStackTrace();
+                enviarRespostaErro(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Erro ao atualizar bandeira: " + e.getMessage());
+            }
+        } catch (JsonSyntaxException e) {
+            enviarRespostaErro(resp, HttpServletResponse.SC_BAD_REQUEST, "Erro ao processar JSON: " + e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            enviarRespostaErro(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Erro inesperado: " + e.getMessage());
+        }
+    }
+
     private JsonObject lerJsonComoObjeto(HttpServletRequest req) throws IOException {
         String json = lerJsonComoString(req);
         return JsonParser.parseString(json).getAsJsonObject();
@@ -133,22 +164,23 @@ public class CartaoControle extends HttpServlet {
     private List<EntidadeDominio> extrairEntidades(JsonObject jsonObject, Gson gson) {
         List<EntidadeDominio> entidadesParaSalvar = new ArrayList<>();
         Cartao cartao = new Cartao();
-        Cliente cliente = new Cliente();
-        Bandeira bandeira = new Bandeira();
+
         if(jsonObject.has("Cartao")){
             // Extrai a informação do campo "Bandeira" do JSON e converte para um objeto do tipo Bandeira.
             // gson.fromJson: converte JSON para um objeto Java. Aqui, é passado o JSON do campo "Bandeira".
             cartao = gson.fromJson(jsonObject.get("Cartao"), Cartao.class);
         }
         if(jsonObject.has("Cliente")){
+            Cliente cliente = new Cliente();
             cliente = gson.fromJson(jsonObject.get("Cliente"), Cliente.class);
+            cartao.setCliente(cliente);
         }
         if(jsonObject.has("Bandeira")){
+            Bandeira bandeira = new Bandeira();
             bandeira = gson.fromJson(jsonObject.get("Bandeira"), Bandeira.class);
+            cartao.setBandeira(bandeira);
         }
 
-        cartao.setCliente(cliente);
-        cartao.setBandeira(bandeira);
 
         entidadesParaSalvar.add(cartao);
 

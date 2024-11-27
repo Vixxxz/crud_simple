@@ -84,7 +84,60 @@ public class CartaoDAO implements IDAO{
     }
 
     @Override
-    public void alterar(EntidadeDominio entidade) {
+    public void alterar(EntidadeDominio entidade) throws Exception {
+        Cartao cartao = (Cartao) entidade;
+        StringBuilder sql = new StringBuilder();
+        sql.append("UPDATE cartao SET ")
+               .append("car_num = ?, car_num_seguranca = ?, car_nome_impresso = ?, car_preferencial = ?, car_dt_cadastro = ?, car_cli_id = ?, car_ban_id = ? ")
+               .append("WHERE car_id =?");
+
+        try{
+            ClienteDAO clienteDAO = new ClienteDAO(connection);
+            List<EntidadeDominio> entidades = clienteDAO.consultar(cartao.getCliente());
+
+            if(entidades.isEmpty()) {
+                throw new Exception("Cliente não cadastrado no sistema");
+            }else{
+                cartao.setCliente((Cliente) entidades.getFirst());
+            }
+
+            connection.setAutoCommit(false);
+
+            BandeiraDAO bandeiraDAO = new BandeiraDAO(connection);
+            entidades = bandeiraDAO.consultar(cartao.getBandeira());
+            if(entidades.isEmpty()) {
+                throw new Exception("Bandeira não cadastrado no sistema");
+            }else{
+                cartao.setBandeira((Bandeira) entidades.getFirst());
+            }
+
+            try(PreparedStatement pst = connection.prepareStatement(sql.toString())){
+                pst.setString(1, cartao.getNumero());
+                pst.setString(2, cartao.getNumSeguranca());
+                pst.setString(3, cartao.getNomeImpresso());
+                pst.setBoolean(4, cartao.getPreferencial());
+                pst.setTimestamp(5, new java.sql.Timestamp(cartao.getDtCadastro().getTime()));
+                pst.setInt(6, cartao.getCliente().getId());
+                pst.setInt(7, cartao.getBandeira().getId());
+                pst.setInt(8, cartao.getId());
+
+                int rowsUpdated = pst.executeUpdate();
+                if (rowsUpdated == 0) {
+                    throw new Exception("Nenhuma bandeira encontrado com o ID: " + cartao.getId());
+                }
+            }
+            connection.commit();
+        }catch (Exception e) {
+            logger.log(Level.SEVERE, "Erro ao atualizar cartao: " + e.getMessage(), e);
+            if (connection != null) {
+                try {
+                    connection.rollback();
+                } catch (SQLException rollbackEx) {
+                    logger.log(Level.SEVERE, "Erro ao realizar rollback: " + rollbackEx.getMessage(), rollbackEx);
+                }
+            }
+            throw new Exception("Erro ao atualizar o cartao: " + e.getMessage(), e);
+        }
 
     }
 
