@@ -145,7 +145,7 @@ public class ClienteControle extends HttpServlet {
                 enviarRespostaSucesso(resp, "Cliente atualizado com sucesso!", entidadesParaAtualizar);
             } catch (Exception e) {
                 e.printStackTrace();
-                enviarRespostaErro(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Erro ao atualizar cliente e cliente endereco: " + e.getMessage());
+                enviarRespostaErro(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Erro ao atualizar cliente: " + e.getMessage());
             }
         } catch (JsonSyntaxException e) {
             enviarRespostaErro(resp, HttpServletResponse.SC_BAD_REQUEST, "Erro ao processar JSON: " + e.getMessage());

@@ -60,8 +60,41 @@ public class BandeiraDAO implements IDAO{
     }
 
     @Override
-    public void alterar(EntidadeDominio entidade) {
+    public void alterar(EntidadeDominio entidade) throws Exception {
+        Bandeira bandeira = (Bandeira) entidade;
+        try{
+            if (connection == null) {
+                connection = Conexao.getConnectionMySQL();
+            }
+            connection.setAutoCommit(false);
 
+            StringBuilder sql = new StringBuilder();
+            sql.append("UPDATE crud_v2.bandeira SET ");
+            sql.append("ban_bandeira = ?, ban_dt_cadastro = ? ");
+            sql.append("WHERE ban_id = ?");
+
+            try(PreparedStatement pst = connection.prepareStatement(sql.toString())){
+                pst.setString(1, bandeira.getNomeBandeira());
+                pst.setTimestamp(2, new java.sql.Timestamp(bandeira.getDtCadastro().getTime()));
+                pst.setInt(3, bandeira.getId());
+
+                int rowsUpdated = pst.executeUpdate();
+                if (rowsUpdated == 0) {
+                    throw new Exception("Nenhuma bandeira encontrado com o ID: " + bandeira.getId());
+                }
+            }
+            connection.commit();
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Erro ao atualizar bandeira: " + e.getMessage(), e);
+            if (connection != null) {
+                try {
+                    connection.rollback();
+                } catch (SQLException rollbackEx) {
+                    logger.log(Level.SEVERE, "Erro ao realizar rollback: " + rollbackEx.getMessage(), rollbackEx);
+                }
+            }
+            throw new Exception("Erro ao atualizar a bandeira: " + e.getMessage(), e);
+        }
     }
 
     @Override

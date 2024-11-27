@@ -15,6 +15,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
@@ -40,10 +41,42 @@ public class BandeiraControle extends HttpServlet {
 
             try{
                 fachada.salvar(entidadesParaSalvar, erros);
-                enviarRespostaSucesso(resp, entidadesParaSalvar);
+                enviarRespostaSucesso(resp, "Bandeira cadastrada com sucesso",entidadesParaSalvar);
             }catch(Exception e){
                 e.printStackTrace();
                 enviarRespostaErro(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Erro ao salvar bandeira: " + e.getMessage());
+            }
+        } catch (JsonSyntaxException e) {
+            enviarRespostaErro(resp, HttpServletResponse.SC_BAD_REQUEST, "Erro ao processar JSON: " + e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            enviarRespostaErro(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Erro inesperado: " + e.getMessage());
+        }
+    }
+
+    @Override
+    protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        configurarCodificacao(req, resp);
+        Gson gson = new Gson();
+        StringBuilder erros = new StringBuilder();
+
+        try {
+            JsonObject jsonObject = lerJsonComoObjeto(req);
+
+            if (!jsonObject.has("Bandeira")) {
+                enviarRespostaErro(resp, HttpServletResponse.SC_BAD_REQUEST, "JSON inválido: Campos obrigatórios ausentes.");
+                return;
+            }
+
+            List<EntidadeDominio> entidadesParaAtualizar = extrairEntidades(jsonObject, gson);
+            IFachada fachada = new Fachada();
+
+            try {
+                fachada.alterar(entidadesParaAtualizar.getFirst(), erros);
+                enviarRespostaSucesso(resp, "Bandeira atualizado com sucesso!", entidadesParaAtualizar);
+            } catch (Exception e) {
+                e.printStackTrace();
+                enviarRespostaErro(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Erro ao atualizar bandeira: " + e.getMessage());
             }
         } catch (JsonSyntaxException e) {
             enviarRespostaErro(resp, HttpServletResponse.SC_BAD_REQUEST, "Erro ao processar JSON: " + e.getMessage());
@@ -88,12 +121,16 @@ public class BandeiraControle extends HttpServlet {
     }
 
 
-    private void enviarRespostaSucesso(HttpServletResponse resp, Object dados) throws IOException {
+    private void enviarRespostaSucesso(HttpServletResponse resp, String mensagem, Object dados) throws IOException {
         resp.setStatus(HttpServletResponse.SC_OK);
+
         JsonObject resposta = new JsonObject();
-        resposta.addProperty("mensagem", "Bandeira salva com sucesso!");
+        resposta.addProperty("mensagem", mensagem);
         resposta.add("dados", new Gson().toJsonTree(dados));
-        resp.getWriter().write(resposta.toString());
+
+        try (PrintWriter writer = resp.getWriter()) {
+            writer.write(resposta.toString());
+        }
     }
 
     private void enviarRespostaErroValidacao(HttpServletResponse resp, String errosDeValidacao) throws IOException {
