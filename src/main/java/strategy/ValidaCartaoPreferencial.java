@@ -14,6 +14,7 @@ public class ValidaCartaoPreferencial implements IStrategy{
             FachadaDAO fachadaDAO = new FachadaDAO();
             Cartao cartaoPreferencial = new Cartao();
             cartaoPreferencial.setPreferencial(true);
+            cartaoPreferencial.setCliente(cartao.getCliente());
             List<EntidadeDominio> cartoes = fachadaDAO.consultar(cartaoPreferencial);
             if(!cartoes.isEmpty()){
                 sb.append("Ja existe um cartao preferencial cadastrado.");

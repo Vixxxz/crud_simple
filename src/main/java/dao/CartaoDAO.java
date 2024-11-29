@@ -40,6 +40,8 @@ public class CartaoDAO implements IDAO{
             ClienteDAO clienteDAO = new ClienteDAO(connection);
             BandeiraDAO bandeiraDAO = new BandeiraDAO(connection);
 
+            System.out.println(cartao.getCliente().getCpf());
+
             List<EntidadeDominio> clientes = clienteDAO.consultar(cartao.getCliente());
             List<EntidadeDominio> bandeiras = bandeiraDAO.consultar(cartao.getBandeira());
 

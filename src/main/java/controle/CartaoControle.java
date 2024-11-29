@@ -171,9 +171,9 @@ public class CartaoControle extends HttpServlet {
             cartao = gson.fromJson(jsonObject.get("Cartao"), Cartao.class);
         }
         if(jsonObject.has("Cliente")){
-            Cliente cliente = new Cliente();
-            cliente = gson.fromJson(jsonObject.get("Cliente"), Cliente.class);
+            Cliente cliente = gson.fromJson(jsonObject.get("Cliente"), Cliente.class);
             cartao.setCliente(cliente);
+            System.out.println(cliente.getCpf());
         }
         if(jsonObject.has("Bandeira")){
             Bandeira bandeira = new Bandeira();

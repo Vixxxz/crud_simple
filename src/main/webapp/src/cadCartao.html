@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link rel="stylesheet" href="../css/style.css">
+    <title>Cadastro Cartao</title>
+</head>
+<body>
+<section class="tabbed-form">
+    <div class="form-titles">
+        <h2 id="cartao-title" class="active-tab"> Cartão</h2>
+        <h2 id="bandeira-title">Bandeira</h2>
+    </div>
+    <form id="form-cartao" method="post">
+        <div class="form-row">
+            <div class="form-field">
+                <a class="btn btn-warning" href="../index.html">Voltar</a>
+            </div>
+            <div class="form-field">
+                <div class="form-row">
+                    <input type="checkbox" name="preferencial" id="preferencial" style="width: 25px"> <span>Este é meu cartão preferencial</span></spa>
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-field">
+                <label for="cpfCartao">CPF</Label>
+                <input type="text" name="cpfCartao" id="cpfCartao" maxlength="11" required placeholder="Digite o CPF do titular do Cartao" />
+            </div>
+            <div class="form-field">
+                <label for="nCartao">Nº do Cartão</label>
+                <input type="text" id="nCartao" name="nCartao" required placeholder="Digite o N° do Cartão s/ espaços">
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-field">
+                <label for="nomeCartao">Nome Impresso</label>
+                <input type="text" id="nomeCartao" placeholder="Digite o Nome impresso no Cartão" required />
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-field">
+                <label for="bandeira">Bandeira</label>
+                <input type="text" name="bandeira" id="bandeira" required placeholder="Digite o nome da bandeira"/>
+            </div>
+            <div class="form-field">
+                <label for="codSeguranca">Cod. Segurança</label>
+                <input type="text" name="codSeguranca"  id="codSeguranca" placeholder="Digite o código de segurança do cartão" required />
+            </div>
+        </div>
+        <div class="submit-section">
+            <button id="submit-cartao" type="submit">Enviar</button>
+        </div>
+    </form>
+    <form id="form-bandeira" method="post">
+        <div class="form-row">
+            <div class="form-field">
+                <label for="criaBandeira">Bandeira</Label>
+                <input type="text" name="criaBandeira" id="criaBandeira" maxlength="10" required />
+                <input type="submit" name="btnBandeira" id="submit-bandeira" class="btnCadBandeira" value="Enviar" />
+            </div>
+        </div>
+    </form>
+</section>
+<footer></footer>
+
+<script src="../js/ManipulaCartao.js" defer></script>
+<script src="../js/ManipulaDataFormCartao.js" defer></script>
+<script src="../js/ManipulaDataFormBandeira.js" defer></script>
+<script src="../js/ScriptCartao.js" defer></script>
+
+</body>
+</html>

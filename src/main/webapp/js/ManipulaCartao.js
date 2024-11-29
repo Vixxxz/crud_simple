@@ -1,4 +1,4 @@
-class ManipulaForm {
+class ManipulaCartao {
     constructor(form1Btn, form2Btn, form1, form2) {
         this.form1Btn = form1Btn;
         this.form2Btn = form2Btn;
@@ -6,6 +6,8 @@ class ManipulaForm {
         this.form2 = form2;
         this.init();
     }
+
+
 
     init() {
         console.log("Form 1 Button:", this.form1Btn);

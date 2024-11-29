@@ -123,71 +123,73 @@ public class ClienteDAO implements IDAO{
     @Override
     public List<EntidadeDominio> consultar(EntidadeDominio entidade) throws Exception {
         List<EntidadeDominio> clientes = new ArrayList<>();
-        try {
-            Cliente cliente = (Cliente) entidade;
-            List<Object> parametros = new ArrayList<>();
+        Cliente cliente = (Cliente) entidade; // Cast da entidade
+        List<Object> parametros = new ArrayList<>(); // Lista de parâmetros
 
-            StringBuilder sql = new StringBuilder();
-            sql.append("SELECT * FROM crud_v2.cliente c ");
-            sql.append("WHERE 1=1 ");
+        StringBuilder sql = new StringBuilder();
+        sql.append("SELECT * FROM crud_v2.cliente c ");
+        sql.append("WHERE 1=1 ");
 
-            if (cliente.getId() != null) {
-                sql.append("AND c.cli_id = ? ");
-                parametros.add(cliente.getId());
-            }
-            if (isStringValida(cliente.getRanking())) {
-                sql.append("AND c.cli_ranking = ? ");
-                parametros.add(cliente.getRanking());
-            }
-            if (isStringValida(cliente.getNome())) {
-                sql.append("AND c.cli_nome = ? ");
-                parametros.add(cliente.getNome());
-            }
-            if (isStringValida(cliente.getGenero())) {
-                sql.append("AND c.cli_genero = ? ");
-                parametros.add(cliente.getGenero());
-            }
-            if (isStringValida(cliente.getCpf())) {
-                sql.append("AND c.cli_cpf = ? ");
-                parametros.add(cliente.getCpf());
-            }
-            if (isStringValida(cliente.getTipoTelefone())) {
-                sql.append("AND c.cli_tp_tel = ? ");
-                parametros.add(cliente.getTipoTelefone());
-            }
-            if (isStringValida(cliente.getTelefone())) {
-                sql.append("AND c.cli_tel = ? ");
-                parametros.add(cliente.getTelefone());
-            }
-            if (isStringValida(cliente.getEmail())) {
-                sql.append("AND c.cli_email = ? ");
-                parametros.add(cliente.getEmail());
-            }
-            if (isStringValida(cliente.getSenha())) {
-                sql.append("AND c.cli_senha = ? ");
-                parametros.add(cliente.getSenha());
-            }
-            if (cliente.getDataNascimento() != null) {
-                sql.append("AND c.cli_dt_nasc = ? ");
-                parametros.add(cliente.getDataNascimento());
+        if (cliente.getId() != null) {
+            sql.append("AND c.cli_id = ? ");
+            parametros.add(cliente.getId());
+        }
+        if (isStringValida(cliente.getRanking())) {
+            sql.append("AND c.cli_ranking = ? ");
+            parametros.add(cliente.getRanking());
+        }
+        if (isStringValida(cliente.getNome())) {
+            sql.append("AND c.cli_nome = ? ");
+            parametros.add(cliente.getNome());
+        }
+        if (isStringValida(cliente.getGenero())) {
+            sql.append("AND c.cli_genero = ? ");
+            parametros.add(cliente.getGenero());
+        }
+        if (isStringValida(cliente.getCpf())) {
+            sql.append("AND c.cli_cpf = ? ");
+            parametros.add(cliente.getCpf());
+        }
+        if (isStringValida(cliente.getTipoTelefone())) {
+            sql.append("AND c.cli_tp_tel = ? ");
+            parametros.add(cliente.getTipoTelefone());
+        }
+        if (isStringValida(cliente.getTelefone())) {
+            sql.append("AND c.cli_tel = ? ");
+            parametros.add(cliente.getTelefone());
+        }
+        if (isStringValida(cliente.getEmail())) {
+            sql.append("AND c.cli_email = ? ");
+            parametros.add(cliente.getEmail());
+        }
+        if (isStringValida(cliente.getSenha())) {
+            sql.append("AND c.cli_senha = ? ");
+            parametros.add(cliente.getSenha());
+        }
+        if (cliente.getDataNascimento() != null) {
+            sql.append("AND c.cli_dt_nasc = ? ");
+            parametros.add(new java.sql.Date(cliente.getDataNascimento().getTime())); // Formato correto para JDBC
+        }
+
+        try (PreparedStatement pst = connection.prepareStatement(sql.toString())) {
+            // Preenche os parâmetros no PreparedStatement
+            for (int i = 0; i < parametros.size(); i++) {
+                pst.setObject(i + 1, parametros.get(i));
             }
 
-            try (PreparedStatement pst = connection.prepareStatement(sql.toString())) {
-                for (int i = 0; i < parametros.size(); i++) {
-                    pst.setObject(i + 1, parametros.get(i));
+            logger.log(Level.INFO, "Executando SQL: " + pst.toString());
+
+            try (ResultSet rs = pst.executeQuery()) {
+                while (rs.next()) {
+                    clientes.add(mapeiaCliente(rs)); // Mapeia cada registro para um Cliente
                 }
-
-                try (ResultSet rs = pst.executeQuery()) {
-                    while (rs.next()) {
-                        clientes.add(mapeiaCliente(rs));
-                    }
-                }
             }
-            return clientes;
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Erro ao consultar clientes: " + e.getMessage(), e);
             throw new Exception("Erro ao consultar clientes: " + e.getMessage(), e);
         }
+
+        return clientes; // Retorna a lista de clientes
     }
 
     private boolean isStringValida(String value) {
