@@ -10,77 +10,67 @@
 </head>
 <body>
 <section class="tela-filtro">
-    <!-- Título da seção -->
-    <header class="form-titles" style="background-color: rgb(244,206,21)">
+    <div class="form-titles" style="background-color: rgb(244,206,21)">
         <h2>Consulta Clientes</h2>
-    </header>
-
-    <div class="container">
-        <!-- Botão de Voltar -->
-        <div class="form-row mb-3">
+    </div>
+    <div>
+        <div class="form-row">
             <div class="form-field">
                 <a class="btn btn-warning" href="../index.html" style="margin: 2vh">Voltar</a>
             </div>
         </div>
-
-        <!-- Formulário de filtro -->
-        <form id="filtroForm" method="get" class="form-row">
-            <div class="form-group mb-3">
-                <label for="cpf">CPF:</label>
-                <input type="text" id="cpf" name="filtroCpf" placeholder="Digite o CPF">
+        <form id="filtroForm" method="get">
+            <div class="form-row">
+                <div class="form-field">
+                    <label for="cpf">CPF:</label>
+                    <input type="text" id="cpf" name="filtroCpf" placeholder="Digite o cpf">
+                </div>
+                <div class="form-field">
+                    <label for="nome">Nome:</label>
+                    <input type="text" id="nome" name="filtroNome" placeholder="Digite o nome">
+                </div>
             </div>
-
-            <div class="form-group mb-3">
-                <label for="nome">Nome:</label>
-                <input type="text" id="nome" name="filtroNome" placeholder="Digite o nome">
+            <div class="form-row">
+                <div class="form-field">
+                    <label for="dataNascimento">Data Nascimento:</label>
+                    <input type="date" id="dataNascimento" name="filtroDataNascimento">
+                </div>
+                <div class="form-field">
+                    <label for="telefone">Telefone:</label>
+                    <input type="text" id="telefone" name="filtroTelefone" placeholder="Digite o telefone">
+                </div>
             </div>
-
-            <div class="form-group mb-3">
-                <label for="dataNascimento">Data de Nascimento:</label>
-                <input type="date" id="dataNascimento" name="filtroDataNascimento">
+            <div class="form-row">
+                <div class="form-field">
+                    <label for="email">E-mail:</label>
+                    <input type="text" id="email" name="filtroEmail" placeholder="Digite o email">
+                </div>
+                <div class="form-field">
+                    <label for="ranking">Ranking</label>
+                    <input type="number" id="ranking" name="filtroRanking">
+                </div>
             </div>
-
-            <div class="form-group mb-3">
-                <label for="telefone">Telefone:</label>
-                <input type="text" id="telefone" name="filtroTelefone" placeholder="Digite o telefone">
-            </div>
-
-            <div class="form-group mb-3">
-                <label for="email">E-mail:</label>
-                <input type="email" id="email" name="filtroEmail" placeholder="Digite o e-mail">
-            </div>
-
-            <div class="form-group mb-3">
-                <label for="ranking">Ranking:</label>
-                <input type="number" id="ranking" name="filtroRanking" placeholder="Digite o ranking">
-            </div>
-
-            <!-- Botão de Filtrar -->
             <div class="form-row">
                 <button class="btn btn-warning" id="submit-filter" type="submit">Filtrar</button>
             </div>
         </form>
     </div>
+    <table id="table-clientes" class="table table-hover">
+        <thead>
+        <tr class="linha-coluna">
+            <th class="cln-id">Id</th>
+            <th class="cln-nome">Nome</th>
+            <th class="cln-cpf">CPF</th>
+            <th class="cln-dataN">Data Nascimento</th>
+            <th class="cln-telefone">Telefone</th>
+            <th class="cln-email">E-mail</th>
+            <th class="cln-acoes">Ações</th>
+        </tr>
+        </thead>
+        <tbody>
 
-    <!-- Tabela de clientes -->
-    <div class="container mt-4">
-        <table id="table-clientes" class="table table-hover">
-            <thead>
-            <tr class="linha-coluna">
-                <th class="cln-id">ID</th>
-                <th class="cln-nome">Nome</th>
-                <th class="cln-cpf">CPF</th>
-                <th class="cln-dataN">Data de Nascimento</th>
-                <th class="cln-telefone">Telefone</th>
-                <th class="cln-email">E-mail</th>
-                <th class="cln-acoes">Ações</th>
-            </tr>
-            </thead>
-            <tbody>
-            <!-- Dados dinâmicos serão inseridos aqui -->
-            </tbody>
-        </table>
-    </div>
+        </tbody>
+    </table>
 
     <!-- Modal de Endereço -->
     <div id="modalEndereco" class="modal">
@@ -99,9 +89,8 @@
             <button id="closeCartao">Fechar</button>
         </div>
     </div>
-</section>
 
-<!-- Scripts -->
+</section>
 <script src="../js/Consulta.js" defer></script>
 </body>
 </html>
