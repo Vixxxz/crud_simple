@@ -177,8 +177,74 @@ public class FachadaDAO implements IFachada {
         }
     }
 
-    public void excluir(EntidadeDominio entidade, StringBuilder sb) {
+    public void excluir(EntidadeDominio entidade) throws Exception {
+        try {
+            if (connection == null || connection.isClosed()) {
+                connection = Conexao.getConnectionMySQL();
+            }
+            connection.setAutoCommit(false);
+            switch (entidade) {
+                case Cliente cliente -> excluirCliente(cliente);
+                case ClienteEndereco clienteEndereco -> excluirClienteEndereco(clienteEndereco);
+                case Bandeira bandeira -> excluirBandeira(bandeira);
+                case Cartao cartao -> excluirCartao(cartao);
+                case null, default ->
+                        throw new IllegalArgumentException("Tipo de entidade não suportado: " + entidade);
+            }
+        }catch (Exception e){
+            try {
+                connection.rollback();
+                logger.log(Level.INFO, "Rollback realizado");
+            } catch (SQLException rollbackEx) {
+                logger.log(Level.SEVERE, "Erro ao tentar realizar o rollback " + rollbackEx.getMessage(), rollbackEx);
+            }
+            logger.log(Level.SEVERE, e.getMessage() + " " + entidade, e);
+            throw new Exception(e.getMessage() + " " + entidade, e);
+        }finally {
+            if (connection != null) {
+                try {
+                    connection.close();
+                } catch (SQLException sqlEx) {
+                    logger.log(Level.SEVERE, "Erro ao tentar fechar a conexão: " + sqlEx.getMessage(), sqlEx);
+                }
+            }
+        }
+    }
 
+    private void excluirCartao(Cartao cartao) throws Exception {
+        try{
+            CartaoDAO cartaoDAO = new CartaoDAO(connection);
+            cartaoDAO.excluir(cartao);
+        } catch (Exception e) {
+            throw new Exception(e.getMessage(), e);
+        }
+    }
+
+    private void excluirBandeira(Bandeira bandeira) throws Exception {
+        try{
+            BandeiraDAO bandeiraDAO = new BandeiraDAO(connection);
+            bandeiraDAO.excluir(bandeira);
+        } catch (Exception e) {
+            throw new Exception(e.getMessage(), e);
+        }
+    }
+
+    private void excluirClienteEndereco(ClienteEndereco clienteEndereco) throws Exception {
+        try{
+            ClienteEnderecoDAO clienteEnderecoDAO = new ClienteEnderecoDAO(connection);
+            clienteEnderecoDAO.excluir(clienteEndereco);
+        } catch (Exception e) {
+            throw new Exception(e.getMessage(), e);
+        }
+    }
+
+    private void excluirCliente(Cliente cliente) throws Exception {
+        try{
+            ClienteDAO clienteDAO = new ClienteDAO(connection);
+            clienteDAO.excluir(cliente);
+        } catch (Exception e) {
+            throw new Exception(e.getMessage(), e);
+        }
     }
 
     public List<EntidadeDominio> consultar(EntidadeDominio entidade) throws Exception {
@@ -186,7 +252,7 @@ public class FachadaDAO implements IFachada {
             if(connection == null || connection.isClosed()){
                 connection = Conexao.getConnectionMySQL();
             }
-            List<EntidadeDominio> entidadesSalvas = new ArrayList<>();
+            List<EntidadeDominio> entidadesSalvas;
             switch (entidade) {
                 case Cliente cliente -> entidadesSalvas = consultaCliente(cliente);
                 case ClienteEndereco clienteEndereco -> entidadesSalvas = consultaClienteEndereco(clienteEndereco);

@@ -12,10 +12,7 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.UnsupportedEncodingException;
+import java.io.*;
 import java.lang.reflect.Type;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -25,6 +22,7 @@ import java.util.List;
 
 @WebServlet(name = "ControleCliente", urlPatterns = "/controlecliente")
 public class ClienteControle extends HttpServlet {
+    @Serial
     private static final long serialVersionUID = 1L;
 
     @Override
@@ -149,6 +147,26 @@ public class ClienteControle extends HttpServlet {
             }
         } catch (JsonSyntaxException e) {
             enviarRespostaErro(resp, HttpServletResponse.SC_BAD_REQUEST, "Erro ao processar JSON: " + e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            enviarRespostaErro(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Erro inesperado: " + e.getMessage());
+        }
+    }
+
+    protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws IOException{
+        configurarCodificacao(req, resp);
+        try{
+            IFachada fachada = new Fachada();
+            Cliente clienteFiltro = new Cliente();
+
+            if (req.getParameter("id")!= null) {
+                clienteFiltro.setId(Integer.parseInt(req.getParameter("id")));
+            }else{
+                throw new IllegalArgumentException("Parâmetro inválido: id não fornecido.");
+            }
+            fachada.excluir(clienteFiltro);
+        } catch (NumberFormatException e) {
+            enviarRespostaErro(resp, HttpServletResponse.SC_BAD_REQUEST, "Parâmetro inválido: " + e.getMessage());
         } catch (Exception e) {
             e.printStackTrace();
             enviarRespostaErro(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Erro inesperado: " + e.getMessage());

@@ -1,6 +1,7 @@
 package dao;
 
 import dominio.Bandeira;
+import dominio.Cartao;
 import dominio.EntidadeDominio;
 import util.Conexao;
 
@@ -99,8 +100,37 @@ public class BandeiraDAO implements IDAO{
     }
 
     @Override
-    public void excluir(EntidadeDominio entidade) {
+    public void excluir(EntidadeDominio entidade) throws Exception {
+        try{
+            if (connection == null) {
+                connection = Conexao.getConnectionMySQL();
+            }
+            connection.setAutoCommit(false);
 
+            Bandeira bandeira = (Bandeira) entidade;
+            List<EntidadeDominio>bandeiras = consultar(bandeira);
+            if(bandeiras.isEmpty()) {
+                throw new Exception("Nenhuma bandeira encontrada com o ID: " + bandeira.getId());
+            }
+
+            StringBuilder sql = new StringBuilder();
+            sql.append("DELETE FROM crud_v2.bandeira WHERE ban_id = ?");
+
+            CartaoDAO cartaoDAO = new CartaoDAO();
+            Cartao cartao = new Cartao();
+            cartao.setBandeira(bandeira);
+            cartaoDAO.excluir(cartao);
+
+            try(PreparedStatement pst = connection.prepareStatement(sql.toString())){
+                pst.setInt(1, bandeira.getId());
+                pst.executeUpdate();
+            }
+            connection.commit();
+            logger.log(Level.INFO, "Bandeira e cartoes excluidos com sucesso");
+        }catch (Exception e) {
+            logger.log(Level.SEVERE, "Erro ao excluir bandeira: " + e.getMessage(), e);
+            throw new Exception("Erro ao excluir a bandeira: " + e.getMessage(), e);
+        }
     }
 
     @Override

@@ -145,8 +145,54 @@ public class CartaoDAO implements IDAO{
     }
 
     @Override
-    public void excluir(EntidadeDominio entidade) {
+    public void excluir(EntidadeDominio entidade) throws Exception {
+        try{
+            if (connection == null) {
+                connection = Conexao.getConnectionMySQL();
+            }
+            connection.setAutoCommit(false);
 
+            Cartao cartao = (Cartao) entidade;
+            List<Object>parametros = new ArrayList<>();
+            List<EntidadeDominio>cartoes;
+
+            cartoes = consultar(cartao);
+
+            if(cartoes.isEmpty()) {
+                throw new Exception("Cartão não cadastrado no sistema");
+            }
+
+            StringBuilder sql = new StringBuilder();
+            sql.append("DELETE FROM crud_v2.cartao ")
+                    .append("WHERE 1=1 ");
+
+            if(cartao.getId() != null){
+                sql.append(" AND car_id = ? ");
+                parametros.add(cartao.getId());
+            }
+
+            if(cartao.getBandeira() != null){
+                sql.append(" AND car_ban_id = ? ");
+                parametros.add(cartao.getBandeira().getId());
+            }
+
+            if(cartao.getCliente() != null){
+                sql.append(" AND car_cli_id = ? ");
+                parametros.add(cartao.getCliente().getId());
+            }
+
+            try(PreparedStatement pst = connection.prepareStatement(sql.toString())){
+                for(int i = 0; i < parametros.size(); i++){
+                    pst.setObject(i + 1, parametros.get(i));
+                }
+                pst.executeUpdate();
+            }
+            connection.commit();
+            logger.info("Cartão excluído com sucesso: " + cartao);
+        }catch (Exception e) {
+            logger.log(Level.SEVERE, "Erro ao excluir cartao: " + e.getMessage(), e);
+            throw new Exception("Erro ao excluir o cartao: " + e.getMessage(), e);
+        }
     }
 
     @Override

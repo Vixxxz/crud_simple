@@ -5,6 +5,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
 import dominio.Bandeira;
+import dominio.Cartao;
 import dominio.EntidadeDominio;
 import fachada.Fachada;
 import fachada.IFachada;
@@ -13,15 +14,13 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.UnsupportedEncodingException;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 
 @WebServlet(name = "ControleBandeira", urlPatterns = "/controlebandeira")
 public class BandeiraControle extends HttpServlet {
+    @Serial
     private static final long serialVersionUID = 1L;
 
     @Override
@@ -86,6 +85,26 @@ public class BandeiraControle extends HttpServlet {
         }
     }
 
+    protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        configurarCodificacao(req, resp);
+        try{
+            IFachada fachada = new Fachada();
+            Bandeira bandeiraFiltro = new Bandeira();
+
+            if (req.getParameter("id")!= null) {
+                bandeiraFiltro.setId(Integer.parseInt(req.getParameter("id")));
+            }else{
+                throw new IllegalArgumentException("Parâmetro inválido: id não fornecido.");
+            }
+            fachada.excluir(bandeiraFiltro);
+        }catch (NumberFormatException e) {
+            enviarRespostaErro(resp, HttpServletResponse.SC_BAD_REQUEST, "Parâmetro inválido: " + e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            enviarRespostaErro(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Erro inesperado: " + e.getMessage());
+        }
+    }
+
     private JsonObject lerJsonComoObjeto(HttpServletRequest req) throws IOException {
         String json = lerJsonComoString(req);
         return JsonParser.parseString(json).getAsJsonObject();
@@ -119,7 +138,6 @@ public class BandeiraControle extends HttpServlet {
 
         return entidadesParaSalvar;
     }
-
 
     private void enviarRespostaSucesso(HttpServletResponse resp, String mensagem, Object dados) throws IOException {
         resp.setStatus(HttpServletResponse.SC_OK);

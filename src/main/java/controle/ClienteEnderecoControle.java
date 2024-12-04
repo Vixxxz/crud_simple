@@ -24,7 +24,6 @@ import java.util.List;
 
 @WebServlet(name = "Controle Cliente Endereco", urlPatterns = "/controleclienteendereco")
 public class ClienteEnderecoControle extends HttpServlet {
-    private static final Long serialVersionUID = 1L;
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {

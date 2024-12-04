@@ -22,15 +22,9 @@ public class Fachada implements IFachada{
                         processarValidacoes(cliente, getValidacoes(cliente), sb);
                         cliente.setSenha(criptografa.processar(cliente, sb));
                     }
-                    case ClienteEndereco clienteEndereco -> {
-                        processarValidacoes(clienteEndereco, getValidacoes(clienteEndereco), sb);
-                    }
-                    case Bandeira bandeira -> {
-                        processarValidacoes(bandeira, getValidacoes(bandeira), sb);
-                    }
-                    case Cartao cartao -> {
-                        processarValidacoes(cartao, getValidacoes(cartao), sb);
-                    }
+                    case ClienteEndereco clienteEndereco -> processarValidacoes(clienteEndereco, getValidacoes(clienteEndereco), sb);
+                    case Bandeira bandeira -> processarValidacoes(bandeira, getValidacoes(bandeira), sb);
+                    case Cartao cartao -> processarValidacoes(cartao, getValidacoes(cartao), sb);
 //                    }
 //                    case Transacao transacao -> {
 //                    }
@@ -175,61 +169,22 @@ public class Fachada implements IFachada{
     }
 
     @Override
-    public void excluir(EntidadeDominio entidade, StringBuilder sb) {
-    }
-
-    @Override
-    public List<EntidadeDominio> consultar(EntidadeDominio entidade) throws Exception {
+    public void excluir(EntidadeDominio entidade) throws Exception {
         try {
-            List<EntidadeDominio> entidades = new ArrayList<>();
-            switch (entidade) {
-                case Cliente cliente -> entidades = consultaCliente(cliente);
-                case ClienteEndereco clienteEndereco -> entidades = consultaClienteEndereco(clienteEndereco);
-                case Bandeira bandeira -> entidades = consultaBandeira(bandeira);
-                case Cartao cartao -> entidades = consultaCartao(cartao);
-//                    }
-//                    case Transacao transacao -> {
-//                    }
-//                    case Log log -> {
-//                    }
-                case null, default ->
-                        throw new IllegalArgumentException("Tipo de entidade não suportado: " + entidade);
-            }
-            return entidades;
+            fachadaDAO.excluir(entidade);
         }catch (Exception e) {
             throw new Exception(e.getMessage() + " " + entidade, e);
         }
     }
 
-    private List<EntidadeDominio> consultaCartao(Cartao cartao) throws Exception {
+    @Override
+    public List<EntidadeDominio> consultar(EntidadeDominio entidade) throws Exception {
         try {
-            return fachadaDAO.consultar(cartao);
-        } catch (Exception e) {
-            throw new Exception("Erro ao consultar o cartão: " + e.getMessage(), e);
-        }
-    }
-
-    private List<EntidadeDominio> consultaBandeira(Bandeira bandeira) throws Exception {
-        try {
-            return fachadaDAO.consultar(bandeira);
-        } catch (Exception e) {
-            throw new Exception("Erro ao consultar o cartão: " + e.getMessage(), e);
-        }
-    }
-
-    private List<EntidadeDominio> consultaClienteEndereco(ClienteEndereco clienteEndereco) throws Exception {
-        try {
-            return fachadaDAO.consultar(clienteEndereco);
-        } catch (Exception e) {
-            throw new Exception("Erro ao consultar o cartão: " + e.getMessage(), e);
-        }
-    }
-
-    private List<EntidadeDominio> consultaCliente(Cliente cliente) throws Exception {
-        try {
-            return fachadaDAO.consultar(cliente);
-        } catch (Exception e) {
-            throw new Exception("Erro ao consultar o cartão: " + e.getMessage(), e);
+            List<EntidadeDominio> entidades;
+            entidades = fachadaDAO.consultar(entidade);
+            return entidades;
+        }catch (Exception e) {
+            throw new Exception(e.getMessage() + " " + entidade, e);
         }
     }
 }

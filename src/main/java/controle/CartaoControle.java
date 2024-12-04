@@ -15,21 +15,18 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.UnsupportedEncodingException;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 
 @WebServlet(name = "Controle Cartao", urlPatterns = "/controlecartao")
 public class CartaoControle extends HttpServlet {
+    @Serial
     private static final long serialVersionUID = 1L;
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         configurarCodificacao(req, resp);
-        Gson gson = new Gson();
 
         try {
             IFachada fachada = new Fachada();
@@ -139,6 +136,26 @@ public class CartaoControle extends HttpServlet {
         }
     }
 
+    protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        configurarCodificacao(req, resp);
+        try{
+            IFachada fachada = new Fachada();
+            Cartao cartaoFiltro = new Cartao();
+
+            if (req.getParameter("id")!= null) {
+                cartaoFiltro.setId(Integer.parseInt(req.getParameter("id")));
+            }else{
+                throw new IllegalArgumentException("Parâmetro inválido: id não fornecido.");
+            }
+            fachada.excluir(cartaoFiltro);
+        }catch (NumberFormatException e) {
+            enviarRespostaErro(resp, HttpServletResponse.SC_BAD_REQUEST, "Parâmetro inválido: " + e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            enviarRespostaErro(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Erro inesperado: " + e.getMessage());
+        }
+    }
+
     private JsonObject lerJsonComoObjeto(HttpServletRequest req) throws IOException {
         String json = lerJsonComoString(req);
         return JsonParser.parseString(json).getAsJsonObject();
@@ -176,8 +193,7 @@ public class CartaoControle extends HttpServlet {
             System.out.println(cliente.getCpf());
         }
         if(jsonObject.has("Bandeira")){
-            Bandeira bandeira = new Bandeira();
-            bandeira = gson.fromJson(jsonObject.get("Bandeira"), Bandeira.class);
+            Bandeira bandeira = gson.fromJson(jsonObject.get("Bandeira"), Bandeira.class);
             cartao.setBandeira(bandeira);
         }
 
