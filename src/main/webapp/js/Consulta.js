@@ -1,57 +1,67 @@
-// Função que realiza a consulta e preenche a tabela com os dados
-async function realizarConsultaClientes() {
-    // Selecione o formulário de filtro
-    const filtroForm = document.getElementById('filtroForm');
+// URL base da API
+const BASE_URL = "http://localhost:8080/crud_v3_war_exploded";
 
-    // Cria os parâmetros de consulta (caso não tenha filtros, ele vai enviar uma consulta "em branco")
+// Função principal para realizar a consulta de clientes
+async function realizarConsultaClientes() {
+    const filtroForm = document.getElementById('filtroForm');
     const queryParams = criarQueryParams(new FormData(filtroForm));
+    const url = `${BASE_URL}/controlecliente?${queryParams}`;
 
     try {
-        const url = `http://localhost:8080/crud_v3_war_exploded/controlecliente?${queryParams}`;
-        console.log("URL gerada:", url);
-
-        // Faz a requisição à API
-        const resposta = await fetch(url);
-
-        // Verifica se a resposta foi bem-sucedida (status 200)
-        if (!resposta.ok) {
-            throw new Error(`Erro na requisição: ${resposta.statusText}`);
-        }
-
-        // Converte a resposta em JSON
-        const respostaJson = await resposta.json();
-
-        // Verifica se a resposta contém a propriedade 'dados' e se ela é um array
-        if (respostaJson.dados && Array.isArray(respostaJson.dados)) {
-            const clientes = respostaJson.dados;
-            renderTabela(clientes);  // Chama a função para renderizar a tabela
+        const respostaJson = await fetchAPI(url);
+        if (respostaJson?.dados?.length) {
+            renderTabela(respostaJson.dados);
         } else {
-            console.error('Erro: A resposta não contém a propriedade "dados" ou ela não é um array.', respostaJson);
-            alert('Erro ao buscar clientes. A resposta da API não é válida.');
+            mostrarErro('Nenhum cliente encontrado ou resposta inválida.');
         }
     } catch (error) {
-        // Se houve algum erro na requisição ou no processamento, exibe a mensagem de erro
-        console.error('Erro ao buscar clientes:', error);
-        alert('Erro ao buscar clientes. Por favor, tente novamente.');
+        mostrarErro('Erro ao buscar clientes.', error);
     }
 }
 
-// Chama a função de consulta ao carregar a página
-document.addEventListener('DOMContentLoaded', (event) => {
-    realizarConsultaClientes();  // Realiza a consulta assim que a página for carregada
-});
+// Função para buscar o endereço de um cliente pelo ID
+async function buscarEnderecoPorId(clienteId) {
+    const url = `${BASE_URL}/controleclienteendereco?idCliente=${clienteId}`;
+    const resposta = await fetchAPI(url, 'Erro ao buscar endereço');
+    console.log('Endereços retornados pela API:', resposta);
+    return resposta;
+}
 
-document.getElementById('filtroForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    realizarConsultaClientes();  // Realiza a consulta ao enviar o formulário de filtro
-});
+// Função genérica para realizar fetch e tratar erros
+async function fetchAPI(url, mensagemErro = 'Erro na requisição') {
+    try {
+        const resposta = await fetch(url);
+        if (!resposta.ok) throw new Error(`${mensagemErro}: ${resposta.statusText}`);
+        return await resposta.json();
+    } catch (error) {
+        console.error(mensagemErro, error);
+        alert(mensagemErro);
+        return null;
+    }
+}
 
-// Função que renderiza os dados na tabela
+// Função para exibir os dados no modal
+function exibirModal(modalId, conteudo) {
+    const modal = document.getElementById(modalId);
+    modal.querySelector('.modal-content').innerHTML = `
+        <div class="modal-header">
+            <h3>${modalId === 'modalEndereco' ? 'Endereço' : 'Cartão'}</h3>
+            <button class="close-modal btn btn-danger btn-sm">Fechar</button>
+        </div>
+        <div class="modal-body">${conteudo}</div>
+    `;
+    modal.style.display = 'flex';
+
+    modal.querySelector('.close-modal').addEventListener('click', () => {
+        modal.style.display = 'none';
+    });
+}
+
+// Função para renderizar a tabela de clientes
 function renderTabela(clientes) {
     const tbody = document.querySelector('#table-clientes tbody');
-    tbody.innerHTML = ''; // Limpa os resultados anteriores
+    tbody.innerHTML = '';
 
-    // Itera sobre os clientes para criar as linhas da tabela
     clientes.forEach(cliente => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
@@ -62,89 +72,88 @@ function renderTabela(clientes) {
             <td>${cliente.telefone || ''}</td>
             <td>${cliente.email || ''}</td>
             <td>
-                <button class="btn-endereco btn btn-sm btn-primary" data-id="${cliente.id}" 
-                    data-endereco='${JSON.stringify(cliente.endereco || {})}'>Endereço</button>
-                <button class="btn-cartao btn btn-sm btn-secondary" data-id="${cliente.id}" 
-                    data-cartao='${JSON.stringify(cliente.cartao || {})}'>Cartão</button>
+                <button class="btn-endereco btn btn-sm btn-primary" data-id="${cliente.id}">Endereço</button>
+                <button class="btn-cartao btn btn-sm btn-secondary" data-id="${cliente.id}">Cartão</button>
             </td>
         `;
         tbody.appendChild(tr);
     });
 
-    // Adiciona os eventos para os modais de endereço e cartão
     adicionarEventosModais();
 }
 
-// Função para adicionar os eventos de modais
+// Função para adicionar eventos aos botões de modais
 function adicionarEventosModais() {
-    // Botões de endereço
     document.querySelectorAll('.btn-endereco').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const endereco = JSON.parse(e.target.getAttribute('data-endereco'));
-            exibirModal('modalEndereco', formatarEndereco(endereco));
+        btn.addEventListener('click', async (e) => {
+            const clienteId = e.target.getAttribute('data-id');
+            try {
+                const enderecos = await buscarEnderecoPorId(clienteId);
+                const conteudo = formatarEndereco(enderecos);
+                exibirModal('modalEndereco', conteudo);
+            } catch (error) {
+                exibirModal('modalEndereco', 'Erro ao carregar endereço.');
+                console.error('Erro ao exibir endereço:', error);
+            }
         });
     });
 
-    // Botões de cartão
     document.querySelectorAll('.btn-cartao').forEach(btn => {
         btn.addEventListener('click', (e) => {
-            const cartao = JSON.parse(e.target.getAttribute('data-cartao'));
-            exibirModal('modalCartao', formatarCartao(cartao));
+            exibirModal('modalCartao', 'Funcionalidade não implementada.');
         });
     });
 }
 
-// Função para exibir o modal
-function exibirModal(modalId, conteudo) {
-    const modal = document.getElementById(modalId);
-    const infoDiv = modal.querySelector('.modal-content');
-    infoDiv.innerHTML = `
-        <div class="modal-header">
-            <h3>${modalId === 'modalEndereco' ? 'Endereço' : 'Cartão'}</h3>
-            <button class="close-modal btn btn-danger btn-sm">Fechar</button>
-        </div>
-        <div class="modal-body">${conteudo}</div>
-    `;
-    modal.style.display = 'flex';
+// Função para formatar os dados do endereço
+function formatarEndereco(dados) {
+    if (!dados || !dados.dados || dados.dados.length === 0) return 'Nenhum endereço encontrado.';
 
-    // Evento para fechar o modal
-    modal.querySelector('.close-modal').addEventListener('click', () => {
-        modal.style.display = 'none';
-    });
+    return dados.dados.map(item => {
+        const endereco = item.endereco || {};
+        const logradouro = endereco.logradouro || {};
+        const bairro = endereco.bairro || {};
+        const cidade = bairro.cidade || {};
+        const uf = cidade.uf || {};
+        const pais = uf.pais || {};
+
+        return `
+            <div style="margin-bottom: 20px;">
+                <p><strong>Tipo de Endereço:</strong> ${item.tipoEndereco || 'N/A'}</p>
+                <p><strong>Tipo de Residência:</strong> ${item.tipoResidencia || 'N/A'}</p>
+                <p><strong>Rua:</strong> ${logradouro.tpLogradouro?.tpLogradouro || 'N/A'} ${logradouro.logradouro || 'N/A'}</p>
+                <p><strong>Número:</strong> ${item.numero || 'N/A'}</p>
+                <p><strong>Bairro:</strong> ${bairro.bairro || 'N/A'}</p>
+                <p><strong>Cidade:</strong> ${cidade.cidade || 'N/A'}</p>
+                <p><strong>Estado:</strong> ${uf.uf || 'N/A'}</p>
+                <p><strong>País:</strong> ${pais.pais || 'N/A'}</p>
+                <p><strong>CEP:</strong> ${endereco.cep || 'N/A'}</p>
+                <p><strong>Observações:</strong> ${item.observacoes || 'N/A'}</p>
+            </div>
+        `;
+    }).join('');
 }
 
-// Função para formatar o endereço
-function formatarEndereco(endereco) {
-    if (!endereco || Object.keys(endereco).length === 0) return 'Endereço não disponível.';
-    return `
-        <p>Rua: ${endereco.tipoLogradouro || ''} ${endereco.logradouro || ''}</p>
-        <p>Número: ${endereco.numero || ''}</p>
-        <p>Bairro: ${endereco.bairro || ''}</p>
-        <p>Cidade: ${endereco.cidade || ''}</p>
-        <p>Estado: ${endereco.estado || ''}</p>
-    `;
-}
-
-// Função para formatar os dados do cartão
-function formatarCartao(cartao) {
-    if (!cartao || Object.keys(cartao).length === 0) return 'Cartão não disponível.';
-    return `
-        <p>Número do Cartão: ${cartao.numero || ''}</p>
-        <p>Bandeira: ${cartao.bandeira || ''}</p>
-        <p>Data de Vencimento: ${cartao.dataVencimento || ''}</p>
-    `;
-}
-
-// Função para criar os parâmetros de consulta (query string)
+// Função para criar os parâmetros de consulta
 function criarQueryParams(formData) {
     const params = new URLSearchParams();
-
-    // Itera sobre os pares chave/valor do FormData
     for (const [key, value] of formData.entries()) {
-        if (value.trim() !== "") { // Ignora campos vazios
-            params.append(key, value.trim());
-        }
+        if (value.trim() !== "") params.append(key, value.trim());
     }
-
-    return params.toString(); // Retorna os parâmetros no formato query string
+    return params.toString();
 }
+
+// Função para exibir mensagens de erro
+function mostrarErro(mensagem, error = null) {
+    console.error(mensagem, error);
+    alert(mensagem);
+}
+
+// Inicialização ao carregar a página
+document.addEventListener('DOMContentLoaded', () => realizarConsultaClientes());
+
+// Evento para o envio do formulário de filtro
+document.getElementById('filtroForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    realizarConsultaClientes();
+});
