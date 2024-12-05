@@ -9,52 +9,50 @@
     <title>Consulta Clientes</title>
 </head>
 <body>
-<section class="tela-filtro">
+<section class="tabbed-form">
     <div class="form-titles" style="background-color: rgb(244,206,21)">
         <h2>Consulta Clientes</h2>
     </div>
-    <div>
-        <div class="form-row">
-            <div class="form-field">
-                <a class="btn btn-warning" href="../index.html" style="margin: 2vh">Voltar</a>
+    <form id="filtroForm" method="get">
+        <fieldset>
+            <div class="form-row">
+                <div class="form-field">
+                    <a class="btn btn-warning" href="../index.html">Voltar</a>
+                </div>
             </div>
-        </div>
-        <form id="filtroForm" method="get">
-            <fieldset>
-                <div class="form-row">
-                    <div class="form-field">
-                        <label for="cpf">CPF:</label>
-                        <input type="text" id="cpf" name="cpf" placeholder="Digite o cpf">
-                    </div>
-                    <div class="form-field">
-                        <label for="nome">Nome:</label>
-                        <input type="text" id="nome" name="nome" placeholder="Digite o nome">
-                    </div>
-                    <div class="form-field">
-                        <label for="dataNascimento">Data Nascimento:</label>
-                        <input type="date" id="dataNascimento" name="dataNascimento">
-                    </div>
+            <div class="form-row">
+                <div class="form-field">
+                    <label for="cpf">CPF:</label>
+                    <input type="text" id="cpf" name="cpf" placeholder="Digite o cpf">
                 </div>
-                <div class="form-row">
-                    <div class="form-field">
-                        <label for="telefone">Telefone:</label>
-                        <input type="text" id="telefone" name="telefone" placeholder="Digite o telefone">
-                    </div>
-                    <div class="form-field">
-                        <label for="email">E-mail:</label>
-                        <input type="text" id="email" name="email" placeholder="Digite o email">
-                    </div>
-                    <div class="form-field">
-                        <label for="ranking">Ranking</label>
-                        <input type="number" id="ranking" name="ranking" placeholder="Digite o ranking">
-                    </div>
+                <div class="form-field">
+                    <label for="nome">Nome:</label>
+                    <input type="text" id="nome" name="nome" placeholder="Digite o nome">
                 </div>
-                <div class="form-row">
-                    <button class="btn btn-warning" id="submit-filter" type="submit">Filtrar</button>
+                <div class="form-field">
+                    <label for="dataNascimento">Data Nascimento:</label>
+                    <input type="date" id="dataNascimento" name="dataNascimento">
                 </div>
-            </fieldset>
-        </form>
-    </div>
+            </div>
+            <div class="form-row">
+                <div class="form-field">
+                    <label for="telefone">Telefone:</label>
+                    <input type="text" id="telefone" name="telefone" placeholder="Digite o telefone">
+                </div>
+                <div class="form-field">
+                    <label for="email">E-mail:</label>
+                    <input type="text" id="email" name="email" placeholder="Digite o email">
+                </div>
+                <div class="form-field">
+                    <label for="ranking">Ranking</label>
+                    <input type="number" id="ranking" name="ranking" placeholder="Digite o ranking">
+                </div>
+            </div>
+            <div class="form-row">
+                <button class="btn btn-warning" id="submit-filter" type="submit">Filtrar</button>
+            </div>
+        </fieldset>
+    </form>
     <table id="table-clientes" class="table table-hover">
         <thead>
         <tr class="linha-coluna">
@@ -81,7 +79,6 @@
         </div>
     </div>
 
-    <!-- Modal de Cartão -->
     <div id="modalCartao" class="modal">
         <div class="modal-content">
             <h3>Cartão</h3>
@@ -90,7 +87,27 @@
         </div>
     </div>
 
+    <!-- Modal Alterar -->
+    <div id="modalAlterar" class="modal">
+        <div class="modal-content">
+            <h3>Alterar</h3>
+            <p id="alterar">Conteúdo do modal Alterar.</p>
+            <button id="closeAlterar">Fechar</button>
+        </div>
+    </div>
+
+    <!-- Modal Excluir -->
+    <div id="modalExcluir" class="modal">
+        <div class="modal-content">
+            <h3>Excluir</h3>
+            <p id="excluir">Tem certeza de que deseja excluir este cliente?</p>
+            <button id="closeExcluir">Fechar</button>
+        </div>
+    </div>
+
+
 </section>
+<footer></footer>
 <script src="../js/Consulta.js" defer></script>
 </body>
 </html>
