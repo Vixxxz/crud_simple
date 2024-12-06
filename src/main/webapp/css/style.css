@@ -230,6 +230,7 @@ h1 {
     max-width: 500px;
     width: 80%;
     height: 80%;
+    position: relative;
 }
 
 .modal button {
@@ -240,13 +241,15 @@ h1 {
     cursor: pointer;
 }
 
-#closeEndereco {
-    margin-left: auto;
+.btnFechar {
+    position: absolute; /* Alinha o botão em relação ao modal */
+    top: 26px; /* Ajusta a posição vertical */
+    right: 20px; /* Ajusta a posição horizontal */
     background-color: red;
 }
 
-.close:hover {
-    background-color: #8B0000;
+.btnFechar:hover {
+    background-color: #880000;
 }
 
 
