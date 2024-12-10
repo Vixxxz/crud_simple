@@ -1,191 +1,110 @@
-// URL base da API
 const BASE_URL = "http://localhost:8080/crud_v3_war_exploded";
 
-// Função principal para realizar a consulta de clientes
+document.addEventListener('DOMContentLoaded', () => {
+    realizarConsultaClientes();
+    document.getElementById('filtroForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        realizarConsultaClientes();
+    });
+});
+
+/** Funções Principais **/
 async function realizarConsultaClientes() {
     const filtroForm = document.getElementById('filtroForm');
     const queryParams = criarQueryParams(new FormData(filtroForm));
     const url = `${BASE_URL}/controlecliente?${queryParams}`;
 
     try {
-        const respostaJson = await fetchAPI(url);
-        respostaJson?.dados?.length ? renderTabela(respostaJson.dados) : mostrarErro('Nenhum cliente encontrado ou resposta inválida.');
+        const respostaJson = await fetchAPI(url, 'Erro ao buscar clientes');
+        respostaJson?.dados?.length
+            ? renderTabela(respostaJson.dados)
+            : mostrarErro('Nenhum cliente encontrado ou resposta inválida.');
     } catch (error) {
         mostrarErro('Erro ao buscar clientes.', error);
     }
 }
 
-// Função para buscar o endereço de um cliente pelo ID
-async function buscarEnderecoPorId(clienteId) {
-    const url = `${BASE_URL}/controleclienteendereco?idCliente=${clienteId}`;
-    return await fetchAPI(url, 'Erro ao buscar endereço');
-}
+async function alterarCliente(clienteId, formData) {
+    if (!validarSenha(formData)) return;
 
-// Função genérica para realizar fetch e tratar erros
-async function fetchAPI(url, mensagemErro = 'Erro na requisição') {
+    const clienteJson = criarClienteJson(clienteId, formData);
     try {
-        const resposta = await fetch(url);
-        if (!resposta.ok) throw new Error(`${mensagemErro}: ${resposta.statusText}`);
-        return await resposta.json();
+        await sendRequest(`${BASE_URL}/controlecliente`, 'PUT', clienteJson);
+        alert('Cliente alterado com sucesso!');
+        realizarConsultaClientes();
+        fecharModal('modalAlterar');
     } catch (error) {
-        console.error(mensagemErro, error);
-        alert(mensagemErro);
-        return null;
+        mostrarErro('Erro ao alterar cliente.', error);
     }
 }
 
-// Função para exibir os dados no modal
-function exibirModal(modalId, conteudo) {
-    const modal = document.getElementById(modalId);
-    modal.querySelector('.modal-content').innerHTML = `
-        <div class="modal-header">
-            <h3>${modalId === 'modalEndereco' ? 'Endereço' : 'Cartão'}</h3>
-            <button class="close-modal btn btn-danger btn-sm">Fechar</button>
-        </div>
-        <div class="modal-body">${conteudo}</div>
-    `;
-    modal.style.display = 'flex';
-    modal.querySelector('.close-modal').addEventListener('click', () => modal.style.display = 'none');
+async function confirmarExclusaoCliente(clienteId) {
+    if (!confirm(`Tem certeza que deseja excluir o cliente com ID ${clienteId}?`)) return;
+
+    try {
+        await sendRequest(`${BASE_URL}/controlecliente?id=${clienteId}`, 'DELETE', { id: clienteId });
+        alert('Cliente excluído com sucesso!');
+        realizarConsultaClientes();
+    } catch (error) {
+        mostrarErro('Erro ao excluir cliente.', error);
+    }
 }
 
-// Função para renderizar a tabela de clientes
+/** Funções Auxiliares **/
 function renderTabela(clientes) {
     const tbody = document.querySelector('#table-clientes tbody');
     tbody.innerHTML = clientes.map(cliente => `
         <tr>
-            <td>${cliente.id || ''}</td>
-            <td>${cliente.nome || ''}</td>
-            <td>${cliente.cpf || ''}</td>
-            <td>${cliente.dataNascimento || ''}</td>
-            <td>${cliente.telefone || ''}</td>
-            <td>${cliente.email || ''}</td>
+            <td>${escapeHtml(cliente.id || '')}</td>
+            <td>${escapeHtml(cliente.nome || '')}</td>
+            <td>${escapeHtml(cliente.cpf || '')}</td>
+            <td>${escapeHtml(cliente.dataNascimento || '')}</td>
+            <td>${escapeHtml(cliente.telefone || '')}</td>
+            <td>${escapeHtml(cliente.email || '')}</td>
             <td>
-                <button class="btn-endereco btn btn-sm btn-primary" data-id="${cliente.id}">Endereço</button>
-                <button class="btn-cartao btn btn-sm btn-secondary" data-id="${cliente.id}">Cartão</button>
-                <button class="btn-alterar btn btn-sm btn-tertiary" data-id="${cliente.id}">Alterar</button>
-                <button class="btn-excluir btn btn-sm btn-quaternary" data-id="${cliente.id}">Excluir</button>
+                <button class="btn-alterar btn btn-sm" data-id="${cliente.id}">Alterar</button>
+                <button class="btn-excluir btn btn-sm" data-id="${cliente.id}">Excluir</button>
             </td>
         </tr>
     `).join('');
-    adicionarEventosModais();
+    adicionarEventosTabela();
 }
 
-// Função para adicionar eventos aos botões de modais
-function adicionarEventosModais() {
-    document.querySelectorAll('.btn-endereco').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-            const clienteId = e.target.getAttribute('data-id');
-            try {
-                const enderecos = await buscarEnderecoPorId(clienteId);
-                const conteudo = formatarEndereco(enderecos);
-                exibirModal('modalEndereco', conteudo);
-            } catch (error) {
-                exibirModal('modalEndereco', 'Erro ao carregar endereço.');
-                console.error('Erro ao exibir endereço:', error);
-            }
-        });
-    });
-
-    document.querySelectorAll('.btn-cartao').forEach(btn => {
-        btn.addEventListener('click', () => exibirModal('modalCartao', 'Funcionalidade não implementada.'));
-    });
-
+function adicionarEventosTabela() {
     document.querySelectorAll('.btn-alterar').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const clienteId = e.target.getAttribute('data-id');
-            const conteudo = `
-                <form id="formAlterar">
-                    <label>Nome:</label>
-                    <input type="text" name="nome" required>
-                    <label>Email:</label>
-                    <input type="email" name="email" required>
-                    <button type="submit" class="btn btn-primary">Salvar</button>
-                    <button class="close-modal btn btn-secondary">Cancelar</button>
-                </form>
-            `;
-            exibirModal('modalAlterar', conteudo);
-            document.getElementById('formAlterar').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const formData = new FormData(e.target);
-                try {
-                    await alterarCliente(clienteId, formData);
-                    alert('Cliente alterado com sucesso!');
-                    await realizarConsultaClientes(); // Atualizar tabela
-                    document.getElementById('modalAlterar').style.display = 'none';
-                } catch (error) {
-                    mostrarErro('Erro ao alterar cliente.', error);
-                }
-            });
-        });
+        btn.addEventListener('click', (e) => exibirFormularioAlteracao(e.target.getAttribute('data-id')));
     });
 
     document.querySelectorAll('.btn-excluir').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const clienteId = e.target.getAttribute('data-id');
-            const conteudo = `
-                <p>Tem certeza que deseja excluir o cliente com ID ${clienteId}?</p>
-                <button id="confirmarExclusao" class="btn btn-danger">Confirmar</button>
-                <button class="close-modal btn btn-secondary">Cancelar</button>
-            `;
-            exibirModal('modalExcluir', conteudo);
-
-            document.getElementById('confirmarExclusao').addEventListener('click', async () => {
-                try {
-                    await excluirCliente(clienteId);
-                    alert(`Cliente ${clienteId} excluído com sucesso!`);
-                    await realizarConsultaClientes(); // Atualizar a tabela
-                    document.getElementById('modalExcluir').style.display = 'none';
-                } catch (error) {
-                    mostrarErro('Erro ao excluir cliente.', error);
-                }
-            });
-        });
+        btn.addEventListener('click', (e) => confirmarExclusaoCliente(e.target.getAttribute('data-id')));
     });
 }
 
-async function excluirCliente(clienteId) {
-    const url = `${BASE_URL}/controlecliente?id=${clienteId}`;
-    const resposta = await fetchAPI(url, 'Erro ao excluir cliente');
-    if (resposta?.success) return true;
-    throw new Error('Falha ao excluir cliente.');
+function exibirFormularioAlteracao(clienteId) {
+    const conteudo = criarFormularioAlteracao(clienteId);
+    exibirModal('modalAlterar', conteudo);
+
+    document.getElementById('formAlterar').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        alterarCliente(clienteId, formData);
+    });
+
+    document.getElementById('nome').focus();
 }
 
-async function alterarCliente(clienteId) {
-    const url = `${BASE_URL}/controlecliente?id=${clienteId}`;
-    const resposta = await fetchAPI(url, 'Erro ao alterar cliente');
-    if (resposta?.success) return true;
-    throw new Error('Falha ao alterar cliente.');
+/** Validação **/
+function validarSenha(formData) {
+    const senha = formData.get('senha');
+    const confirmaSenha = formData.get('confirmaSenha');
+    if (senha !== confirmaSenha) {
+        alert('As senhas não coincidem. Por favor, verifique.');
+        return false;
+    }
+    return true;
 }
 
-// Função para formatar os dados do endereço
-function formatarEndereco(dados) {
-    if (!dados?.dados?.length) return 'Nenhum endereço encontrado.';
-    return dados.dados.map(item => {
-        const endereco = item.endereco || {};
-        const logradouro = endereco.logradouro || {};
-        const bairro = endereco.bairro || {};
-        const cidade = bairro.cidade || {};
-        const uf = cidade.uf || {};
-        const pais = uf.pais || {};
-
-        return `
-            <div style="margin-bottom: 20px;">
-                <p><strong>Tipo de Endereço:</strong> ${item.tipoEndereco || 'N/A'}</p>
-                <p><strong>Tipo de Residência:</strong> ${item.tipoResidencia || 'N/A'}</p>
-                <p><strong>Rua:</strong> ${logradouro.tpLogradouro?.tpLogradouro || 'N/A'} ${logradouro.logradouro || 'N/A'}</p>
-                <p><strong>Número:</strong> ${item.numero || 'N/A'}</p>
-                <p><strong>Bairro:</strong> ${bairro.bairro || 'N/A'}</p>
-                <p><strong>Cidade:</strong> ${cidade.cidade || 'N/A'}</p>
-                <p><strong>Estado:</strong> ${uf.uf || 'N/A'}</p>
-                <p><strong>País:</strong> ${pais.pais || 'N/A'}</p>
-                <p><strong>CEP:</strong> ${endereco.cep || 'N/A'}</p>
-                <p><strong>Observações:</strong> ${item.observacoes || 'N/A'}</p>
-            </div>
-        `;
-    }).join('');
-}
-
-// Função para criar os parâmetros de consulta
+/** Utilitários **/
 function criarQueryParams(formData) {
     const params = new URLSearchParams();
     formData.forEach((value, key) => {
@@ -194,17 +113,136 @@ function criarQueryParams(formData) {
     return params.toString();
 }
 
-// Função para exibir mensagens de erro
-function mostrarErro(mensagem, error = null) {
+function criarClienteJson(clienteId, formData) {
+    return {
+        Cliente: {
+            id: clienteId,
+            nome: formData.get('nome'),
+            genero: formData.get('genero'),
+            cpf: formData.get('cpf'),
+            tipoTelefone: formData.get('tipoTelefone'),
+            telefone: formData.get('telefone'),
+            email: formData.get('email'),
+            senha: formData.get('senha'),
+            dataNascimento: formData.get('dataNascimento')
+        }
+    };
+}
+
+async function fetchAPI(url, mensagemErro) {
+    try {
+        const resposta = await fetch(url);
+        if (!resposta.ok) throw new Error(`${mensagemErro}: ${resposta.statusText}`);
+        return await resposta.json();
+    } catch (error) {
+        console.error(mensagemErro, error);
+        alert(mensagemErro);
+        throw error;
+    }
+}
+
+async function sendRequest(url, method, body = null) {
+    const options = {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+    };
+    if (body) options.body = JSON.stringify(body);
+
+    const resposta = await fetch(url, options);
+    if (!resposta.ok) throw new Error(`${method} failed: ${resposta.statusText}`);
+    return await resposta.json();
+}
+
+function mostrarErro(mensagem, error) {
     console.error(mensagem, error);
     alert(mensagem);
 }
 
-// Inicialização ao carregar a página
-document.addEventListener('DOMContentLoaded', () => realizarConsultaClientes());
+function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.innerText = str;
+    return div.innerHTML;
+}
 
-// Evento para o envio do formulário de filtro
-document.getElementById('filtroForm').addEventListener('submit', (e) => {
-    e.preventDefault();
-    realizarConsultaClientes();
-});
+function exibirModal(modalId, conteudo) {
+    const modal = document.getElementById(modalId);
+    modal.querySelector('.modal-content').innerHTML = conteudo;
+    modal.style.display = 'flex';
+
+    modal.querySelector('.close-modal').addEventListener('click', () => fecharModal(modalId));
+}
+
+function fecharModal(modalId) {
+    const modal = document.getElementById(modalId);
+    modal.style.display = 'none';
+}
+
+function criarFormularioAlteracao(clienteId) {
+    return `
+        <section>
+            <form id="formAlterar" data-id="${clienteId}">
+                <h3>Alterar Cliente</h3>
+                <div class="form-row">
+                    <div class="form-field">
+                        <label for="nome">Nome:</label>
+                        <input type="text" id="nome" name="nome" required>
+                    </div>   
+                </div>
+                <div class="form-row">
+                    <div class="form-field">
+                        <label for="genero">Gênero:</label>
+                        <select id="genero" name="genero" required>
+                            <option value="">Selecione</option>
+                            <option value="M">Masculino</option>
+                            <option value="F">Feminino</option>
+                        </select>
+                    </div>
+                    <div class="form-field">
+                        <label for="cpf">CPF:</label>
+                        <input type="text" id="cpf" name="cpf" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-field">
+                        <label>Tipo do Telefone <span class="required">*</span></label>
+                        <div class="form-row" aria-labelledby="tipoTelefone-label">
+                            <input type="radio" name="tipoTelefone" id="residencial" value="residencial" />
+                            <label for="residencial">Residencial</label>
+                            <input type="radio" name="tipoTelefone" id="comercial" value="comercial" />
+                            <label for="comercial">Comercial</label>
+                        </div>
+                    </div>
+                    <div class="form-field">
+                        <label for="telefone">Telefone:</label>
+                        <input type="text" id="telefone" name="telefone" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-field">
+                        <label for="email">E-mail:</label>
+                        <input type="email" id="email" name="email" required>
+                    </div>
+                    <div class="form-field">
+                        <label for="dataNascimento">Data de Nascimento:</label>
+                        <input type="date" id="dataNascimento" name="dataNascimento" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-field">
+                        <label for="senha">Senha:</label>
+                        <input type="password" id="senha" name="senha">
+                    </div>
+                    <div class="form-field">
+                        <label for="confirmaSenha">Confirmar Senha:</label>
+                    <input type="password" id="confirmaSenha" name="confirmaSenha">
+                    </div>
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" class="close-modal btn btn-danger btn-sm btnFechar">Fechar</button>
+                    <button type="submit" class="btn btn-primary btn-sm">Confirmar</button>
+                    <button type="button" class="btn btn-primary btn-sm">Cancelar</button>
+                </div>
+            </form>
+        </section>
+    `;
+}
